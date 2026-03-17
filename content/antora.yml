@@ -1,5 +1,7 @@
 name: modules
-title: Showroom Collection
-version: ~
+title: OCP4 Getting Started Workshop
+version: master
 nav:
   - modules/ROOT/nav.adoc
+
+start_page: ROOT:index.adoc
