@@ -188,7 +188,7 @@ Create a Deployment from a container image:
 [source,bash]
 ----
 oc create deployment hello-openshift \
-  --image=quay.io/openshiftlabs/hello-openshift:1.0.0
+  --image=docker.io/openshift/hello-openshift
 ----
 
 This creates a *Deployment* resource. OpenShift uses the Deployment to create and manage your Pod --
