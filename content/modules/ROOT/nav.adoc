@@ -4,3 +4,5 @@
 * xref:03-module-01-openshift-concepts-tabbed.adoc[Module 1: OpenShift Concepts (Tabbed)]
 * xref:03-module-01-openshift-concepts-combined.adoc[Module 1: OpenShift Concepts (Combined)]
 * xref:03-module-01-openshift-concepts-collapsible.adoc[Module 1: OpenShift Concepts (Collapsible)]
+* xref:04-module-02-deploy-datasphere.adoc[Module 2: 3 Ways to Deploy (CLI)]
+* xref:04-module-02-deploy-datasphere-console.adoc[Module 2: 3 Ways to Deploy (Console)]
