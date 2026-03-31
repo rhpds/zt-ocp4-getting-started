@@ -361,7 +361,7 @@ Deploy the DataSphere UI from its container image:
 
 [source,role="execute"]
 ----
-oc new-app quay.io/nstephan/datasphere-ui:1.0.0 --name=datasphere-ui
+oc new-app quay.io/nstephan/datasphere-ui:1.0.1-03 --name=datasphere-ui
 ----
 
 [%collapsible]
@@ -429,14 +429,14 @@ your app at this address, but it's not yet accessible from outside.
 
 [source,role="execute"]
 ----
-oc expose service datasphere-ui
+oc create route edge --service=datasphere-ui --insecure-policy=Redirect
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-route.route.openshift.io/datasphere-ui exposed
+route.route.openshift.io/datasphere-ui created
 ----
 ====
 
