@@ -47,7 +47,7 @@ Deploy the DataSphere UI and expose it:
 [source,role="execute",subs="attributes+"]
 ----
 oc project {user}-lab
-oc new-app quay.io/rhdp/datasphere-ui:1.0.0 --name=datasphere-ui
+oc new-app quay.io/nstephan/datasphere-ui:1.0.0 --name=datasphere-ui
 oc expose service datasphere-ui
 oc rollout status deployment/datasphere-ui
 ----

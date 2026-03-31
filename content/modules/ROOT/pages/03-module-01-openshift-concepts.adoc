@@ -202,7 +202,7 @@ Namespace:    {user}-datasphere
 Labels:       app=datasphere-ui
 Containers:
   datasphere-ui:
-    Image:    quay.io/rhdp/datasphere-ui:1.0.0
+    Image:    quay.io/nstephan/datasphere-ui:1.0.0
     Port:     8080/TCP
     State:    Running
     Ready:    True
@@ -361,14 +361,14 @@ Deploy the DataSphere UI from its container image:
 
 [source,role="execute"]
 ----
-oc new-app quay.io/rhdp/datasphere-ui:1.0.0 --name=datasphere-ui
+oc new-app quay.io/nstephan/datasphere-ui:1.0.0 --name=datasphere-ui
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
---> Found container image ... (quay.io/rhdp/datasphere-ui:1.0.0)
+--> Found container image ... (quay.io/nstephan/datasphere-ui:1.0.0)
     ...
 --> Creating resources ...
     imagestream.image.openshift.io "datasphere-ui" created

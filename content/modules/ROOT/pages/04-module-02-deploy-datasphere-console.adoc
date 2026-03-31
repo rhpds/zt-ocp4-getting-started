@@ -112,7 +112,7 @@ Now let's understand how it works.
 In the Topology view, click the `datasphere-ui` component to open its side panel.
 Click *Actions* → *Edit Deployment* to see its configuration.
 
-Under *Container*, note the image: `quay.io/rhdp/datasphere-ui:1.0.0`.
+Under *Container*, note the image: `quay.io/nstephan/datasphere-ui:1.0.0`.
 
 The image is pulled from a container registry and run directly.
 No source code was compiled. No build was needed.
@@ -123,7 +123,7 @@ No source code was compiled. No build was needed.
 
 Click the `datasphere-api` component in the Topology view.
 
-Under *Container*, note the image: `quay.io/rhdp/datasphere-api:1.0.0`.
+Under *Container*, note the image: `quay.io/nstephan/datasphere-api:1.0.0`.
 
 In this pre-deployed version, the API runs from a pre-built image.
 In Section 3, you will build it from source code instead.
@@ -164,7 +164,7 @@ Select *Container images*.
 
 Fill in the form:
 
-* *Image name from external registry*: `quay.io/rhdp/datasphere-ui:1.0.0`
+* *Image name from external registry*: `quay.io/nstephan/datasphere-ui:1.0.0`
 * Wait for the image to be validated (a green checkmark appears)
 * *Application name*: `datasphere`
 * *Name*: `datasphere-ui`
