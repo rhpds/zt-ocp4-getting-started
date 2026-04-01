@@ -59,6 +59,7 @@ You have access to the following projects and can switch between them with 'oc p
 
   * {user}-datasphere
     {user}-lab
+    {user}-lab-helm
 
 Using project "{user}-datasphere".
 Welcome! See 'oc help' to get started.
@@ -83,10 +84,11 @@ oc whoami
 
 === Your lab Projects
 
-2 Projects have been provisioned for you:
+3 Projects have been provisioned for you:
 
-* `{user}-datasphere`: contains a pre-deployed DataSphere application used in Sections 1 and 2
-* `{user}-lab`: your clean workspace for Section 3
+* `{user}-datasphere`: contains the pre-deployed DataSphere application — explore it in Sections 1 and 2
+* `{user}-lab`: your clean workspace — you'll build here in Section 3
+* `{user}-lab-helm`: reserved for the Helm deployment exercise in Lab 2
 
 NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes your resources and controls access.
 
@@ -202,7 +204,7 @@ Namespace:    {user}-datasphere
 Labels:       app=datasphere-ui
 Containers:
   datasphere-ui:
-    Image:    quay.io/nstephan/datasphere-ui:1.0.2
+    Image:    quay.io/rhpds/datasphere-ui:1.1.0
     Port:     8080/TCP
     State:    Running
     Ready:    True

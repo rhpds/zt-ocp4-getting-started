@@ -42,7 +42,7 @@ this lab interface:
 oc login {openshift_api_url} --username {user} --password {password}
 ----
 
-Deploy the DataSphere UI and expose it:
+Switch to your lab Project, deploy the DataSphere UI, and expose it:
 
 [source,role="execute",subs="attributes+"]
 ----
@@ -110,11 +110,30 @@ Now using project "{user}-lab" on server "{openshift_api_url}".
 The UI is running but the map is empty. The frontend is already calling `datasphere-api:8080`
 on every page load — there's just nothing answering yet.
 
-=== Step 2.1: Build and deploy the API from source
+=== Step 2.1: Find your Gitea repository
 
-The API source code lives in a Git repository.
+Your lab environment includes a personal Gitea instance with the DataSphere API source already
+loaded. Open the Gitea console:
+
+[source,role="execute",subs="attributes+"]
+----
+echo {gitea_url}
+----
+
+Log in with your lab credentials (`{user}` / `{password}`). You should see a `datasphere-api`
+repository already in your account — this is the source code you'll build from.
+
+Confirm the repository URL:
+
+[source,role="execute",subs="attributes+"]
+----
+echo {gitea_url}/{user}/datasphere-api
+----
+
+=== Step 2.2: Build and deploy the API from source
+
 Rather than building a container image locally and pushing it yourself, you point OpenShift at
-the repository and let it do the work. This is *Source-to-Image* (S2I).
+your Gitea repository and let it do the work. This is *Source-to-Image* (S2I).
 
 The `python~` prefix tells OpenShift two things: use the Python builder image, and build from
 the source that follows. OpenShift clones the repository, detects `requirements.txt`,
@@ -123,7 +142,7 @@ with no Dockerfile required.
 
 [source,role="execute",subs="attributes+"]
 ----
-oc new-app python~{datasphere_api_repo} --context-dir=datasphere/api --name=datasphere-api
+oc new-app python~{gitea_url}/{user}/datasphere-api --name=datasphere-api
 ----
 
 [%collapsible]
@@ -156,7 +175,7 @@ oc logs -f buildconfig/datasphere-api
 .Expected output (truncated)
 ====
 ----
-Cloning "{datasphere_api_repo}" ...
+Cloning "https://gitea.../datasphere-api" ...
 STEP 1/9: FROM image-registry.openshift-image-registry.svc:5000/openshift/python:latest
 ...
 Collecting fastapi
@@ -169,9 +188,9 @@ Push successful
 ====
 
 That entire build ran inside the cluster: no Docker installed locally, no CI/CD pipeline
-configured, no external registry account needed. OpenShift pulled the source, installed
-dependencies, built and tagged the image, pushed it to its internal registry, and is now
-deploying it — all triggered by one `oc new-app` command.
+configured, no external registry account needed. OpenShift pulled the source from your Gitea
+repository, installed dependencies, built and tagged the image, pushed it to its internal
+registry, and is now deploying it — all triggered by one `oc new-app` command.
 
 Wait for the deployment:
 
@@ -188,7 +207,7 @@ deployment "datasphere-api" successfully rolled out
 ----
 ====
 
-=== Step 2.2: Watch the map come to life
+=== Step 2.3: Watch the map come to life
 
 Open the UI URL — the same URL from before:
 
@@ -214,11 +233,11 @@ The DataSphere chart defines the same Deployments, Services, and Route you creat
 2 stages, but bundled so the entire application installs, upgrades, and removes as one operation.
 This is how teams ship multi-component applications repeatably.
 
-Create a new Project:
+Switch to your pre-provisioned Helm Project:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc new-project {user}-datasphere-helm
+oc project {user}-lab-helm
 ----
 
 [%collapsible]
@@ -226,24 +245,28 @@ oc new-project {user}-datasphere-helm
 ====
 [subs="attributes+"]
 ----
-Now using project "{user}-datasphere-helm" on server "{openshift_api_url}".
+Now using project "{user}-lab-helm" on server "{openshift_api_url}".
 ----
 ====
 
-The DataSphere Helm chart is pre-staged in your home directory. Install it:
+Install the DataSphere chart directly from the OCI registry:
 
-[source,role="execute"]
+[source,role="execute",subs="attributes+"]
 ----
-helm install datasphere ~/datasphere-gitops
+helm install datasphere {datasphere_helm_chart} --version {datasphere_helm_version}
 ----
+
+NOTE: The same chart is also available in the OpenShift *Developer Catalog* — the console version
+of this lab walks through the UI flow. From the CLI, `helm` talks to the OCI registry directly.
 
 [%collapsible]
 .Expected output
 ====
+[subs="attributes+"]
 ----
 NAME: datasphere
 LAST DEPLOYED: ...
-NAMESPACE: {user}-datasphere-helm
+NAMESPACE: {user}-lab-helm
 STATUS: deployed
 REVISION: 1
 ----
