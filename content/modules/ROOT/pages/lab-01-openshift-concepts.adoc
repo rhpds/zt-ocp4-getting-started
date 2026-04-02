@@ -189,10 +189,10 @@ oc describe pod -l component=ui
 ----
 Name:         datasphere-ui-5c8b4f6d9-n7rlv
 Namespace:    {user}-datasphere
-Labels:       app=datasphere-ui
+Labels:       app=datasphere
 Containers:
   datasphere-ui:
-    Image:    quay.io/rhpds/datasphere-ui:1.1.2
+    Image:    quay.io/rhpds/datasphere-ui:1.1.3
     Port:     8080/TCP
     State:    Running
     Ready:    True
