@@ -1,0 +1,555 @@
+= Module 3: Apps That Never Go Down
+:source-highlighter: rouge
+:toc: macro
+:toclevels: 2
+
+Your DataSphere demo app (the datacenter visualization you deployed in Labs 1 and 2) is
+running. Users are happy. But what happens when a pod crashes? What happens when traffic
+spikes? In this module, you'll find out by breaking things on purpose, then watching
+OpenShift fix them automatically.
+
+toc::[]
+
+== Learning objectives
+
+By the end of this module, you'll be able to:
+
+* Explain how ReplicaSets maintain pod availability
+* Describe the difference between liveness and readiness probes
+* Configure a Horizontal Pod Autoscaler (HPA) for automatic scaling
+* Demonstrate zero-downtime resilience under pod failure and traffic load
+
+== Get connected
+
+=== OpenShift Web Console
+
+Click the *Console* tab on the right side of this lab interface.
+
+Log in with these credentials:
+
+* *Username*: `{user}`
+* *Password*: `{password}`
+* *Console URL*: {openshift_console_url}
+
+=== Terminal (CLI)
+
+Click the *Terminal* tab on the right side of this lab interface.
+
+Log in to the cluster:
+
+[source,role="execute",subs="attributes+"]
+----
+oc login {openshift_api_url} --username {user} --password {password}
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Login successful.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+  * {user}-datasphere
+    {user}-lab
+    {user}-lab-helm
+
+Using project "{user}-datasphere".
+Welcome! See 'oc help' to get started.
+----
+====
+
+=== Your lab Projects
+
+Make sure you're in the `{user}-datasphere` Project:
+
+[source,role="execute",subs="attributes+"]
+----
+oc project {user}-datasphere
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Already on project "{user}-datasphere" on server "{openshift_api_url}".
+----
+====
+
+== Section 1: What happens when things break?
+
+=== See the current state
+
+Click the *Client App* tab on the right. You should see the DataSphere map with all
+30 datacenters showing green status.
+
+Now switch to the *Console* tab. Navigate to *Workloads* > *Pods* in the
+`{user}-datasphere` Project. You should see 1 `datasphere-api` pod running.
+
+=== Kill a pod
+
+With the *Console* tab open, click on the `datasphere-api` pod, then click *Actions* >
+*Delete Pod*. Confirm the deletion.
+
+Switch to the *Client App* tab. Watch for the "API unreachable" warning in the top
+status bar.
+
+[NOTE]
+====
+The warning appears briefly, then clears as the replacement pod starts. OpenShift
+replaced the pod automatically through the ReplicaSet controller. But your users
+experienced a real outage during the gap.
+====
+
+=== Fix it with replicas
+
+Switch to the *Terminal* tab. Scale the API deployment to 3 replicas:
+
+[source,role="execute",subs="attributes+"]
+----
+oc scale deployment datasphere-api --replicas=3 --namespace {user}-datasphere
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment.apps/datasphere-api scaled
+----
+====
+
+Verify 3 pods are running:
+
+[source,role="execute",subs="attributes+"]
+----
+oc get pods --namespace {user}-datasphere --selector component=api
+----
+
+[%collapsible]
+.Expected output
+====
+----
+NAME                              READY   STATUS    RESTARTS   AGE
+datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          2m
+datasphere-api-5d4f8b7c9-def34   1/1     Running   0          15s
+datasphere-api-5d4f8b7c9-ghi56   1/1     Running   0          15s
+----
+====
+
+Now delete a pod again from the *Console* tab. Click on any of the 3 `datasphere-api`
+pods, then *Actions* > *Delete Pod*.
+
+Switch to the *Client App* tab. This time: no warning. The map stayed live the entire
+time. The Service routed traffic to the 2 surviving pods while the replacement started.
+
+[NOTE]
+====
+With multiple replicas, the Service load-balances across all pods with matching labels.
+Losing 1 pod out of 3 means the other 2 handle requests without interruption. This is
+why production workloads always run more than 1 replica.
+====
+
+=== How the liveness probe works
+
+The DataSphere API has a liveness probe configured. It checks the `/health` endpoint
+every 10 seconds. If the check fails 3 times in a row, OpenShift restarts the container.
+
+From the *Terminal* tab, trigger a health failure:
+
+[source,role="execute",subs="attributes+"]
+----
+curl -X POST https://datasphere-ui-{user}-datasphere.{openshift_cluster_ingress_domain}/api/break
+----
+
+[%collapsible]
+.Expected output
+====
+----
+{"status":"broken","message":"Health check will now fail. OCP will restart this pod."}
+----
+====
+
+[NOTE]
+====
+The `curl` request hit 1 of the 3 API pods through the Service load balancer. Only
+that pod has its health flag set to broken. The other 2 pods remain healthy. This is
+because the broken state is stored in memory, and each pod has its own memory.
+====
+
+Switch to the *Console* tab and watch the *Pods* view. Within 30 seconds, you'll see
+one pod's restart count increment from 0 to 1. The liveness probe detected the failure
+and restarted the container automatically.
+
+Switch to the *Client App* tab. The map never went down because the other 2 replicas
+kept serving requests.
+
+[NOTE]
+====
+Notice the difference from the first demo: deleting a pod removes it entirely and the
+ReplicaSet creates a replacement. Here, the liveness probe *restarted* the existing pod.
+Same result for the user (no outage with multiple replicas), but a different mechanism.
+====
+
+=== Auto-scaling under load
+
+The DataSphere API has a Horizontal Pod Autoscaler (HPA) configured. It watches CPU
+usage and scales the number of pods between 1 and 5.
+
+From the *Terminal* tab, check the current HPA status:
+
+[source,role="execute",subs="attributes+"]
+----
+oc get hpa --namespace {user}-datasphere
+----
+
+[%collapsible]
+.Expected output
+====
+----
+NAME              REFERENCE                    TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+datasphere-api    Deployment/datasphere-api    2%/50%    1         5         3          10m
+----
+====
+
+The `TARGETS` column shows `2%/50%`: current CPU utilization is 2%, and the HPA will
+scale up when it crosses 50%.
+
+Now switch to the *Client App* tab. Click on a major datacenter hub (one of the
+larger circles, such as *Raleigh*). In the detail panel that opens, click the status
+toggle button to take it *offline*.
+
+Watch the map: the remaining hubs absorb the load. Their capacity bars climb. Some
+turn orange (degraded).
+
+When a datacenter goes offline, the DataSphere API works harder on every request:
+it recalculates load distribution across all remaining hubs. The more datacenters
+you take offline, the more CPU each API request consumes.
+
+Take a second major hub offline. Then a third.
+
+Switch to the *Console* tab. Navigate to *Workloads* > *HorizontalPodAutoscalers*.
+Watch the CPU percentage climb. When it crosses 50%, the HPA begins adding pods.
+
+Watch the pod count increase from 3 to 4, then 5.
+
+[NOTE]
+====
+If the CPU doesn't climb fast enough, open a second browser tab pointing at the
+*Client App* URL. Each tab polls the API every 3 seconds, doubling the request rate.
+This is a realistic pattern: more users means more load.
+====
+
+Now switch back to the *Client App* tab. Bring the datacenters back online by clicking
+each one and toggling the status back to *online*. The cascade resolves: capacity bars
+drop, hubs return to green.
+
+Switch to the *Console* tab. Over the next few minutes, the HPA scales the pods back
+down as CPU usage drops.
+
+[NOTE]
+====
+The HPA scales up quickly (within 15 seconds of crossing the threshold) but scales
+down slowly (5 minutes of sustained low usage by default). This is deliberate: rapid
+scale-down could cause oscillation if load fluctuates.
+====
+
+== Section 2: Build it yourself
+
+Now you know what resilience looks like. In this section, you'll configure it from
+scratch in your own Project.
+
+Switch to the `{user}-lab` Project:
+
+[source,role="execute",subs="attributes+"]
+----
+oc project {user}-lab
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Now using project "{user}-lab" on server "{openshift_api_url}".
+----
+====
+
+=== Deploy a basic application
+
+Deploy the DataSphere API without any resilience features:
+
+[source,role="execute",subs="attributes+"]
+----
+oc new-app --image {datasphere_api_image} --name resilience-demo
+----
+
+[%collapsible]
+.Expected output
+====
+----
+--> Creating resources ...
+    deployment.apps "resilience-demo" created
+    service "resilience-demo" created
+--> Success
+----
+====
+
+Wait for the pod to start:
+
+[source,role="execute"]
+----
+oc rollout status deployment resilience-demo
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment "resilience-demo" successfully rolled out
+----
+====
+
+Expose the Service with a Route:
+
+[source,role="execute"]
+----
+oc create route edge --service=resilience-demo
+----
+
+[%collapsible]
+.Expected output
+====
+----
+route.route.openshift.io/resilience-demo created
+----
+====
+
+=== Experience the outage
+
+Verify the app responds:
+
+[source,role="execute"]
+----
+curl -s https://$(oc get route resilience-demo -o jsonpath='{.spec.host}')/health
+----
+
+[%collapsible]
+.Expected output
+====
+----
+{"status":"ok"}
+----
+====
+
+Now delete the pod:
+
+[source,role="execute"]
+----
+oc delete pod --selector deployment=resilience-demo
+----
+
+[%collapsible]
+.Expected output
+====
+----
+pod "resilience-demo-6b8c9d7f5-x4k2m" deleted
+----
+====
+
+Immediately try to reach the API:
+
+[source,role="execute"]
+----
+curl -s https://$(oc get route resilience-demo -o jsonpath='{.spec.host}')/health
+----
+
+You may get an error or timeout. With only 1 replica, deleting the pod means downtime
+until the replacement is ready.
+
+=== Add health probes
+
+Add a liveness probe. This tells OpenShift to restart the container if it stops
+responding:
+
+[source,role="execute"]
+----
+oc set probe deployment/resilience-demo --liveness --get-url=http://:8080/health --initial-delay-seconds=10 --period-seconds=10 --failure-threshold=3
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment.apps/resilience-demo probes updated
+----
+====
+
+Add a readiness probe. This tells the Service to stop sending traffic to a pod that
+isn't ready:
+
+[source,role="execute"]
+----
+oc set probe deployment/resilience-demo --readiness --get-url=http://:8080/health --initial-delay-seconds=5 --period-seconds=5
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment.apps/resilience-demo probes updated
+----
+====
+
+Verify the probes are configured:
+
+[source,role="execute"]
+----
+oc describe deployment resilience-demo
+----
+
+[%collapsible]
+.Expected output (key fields)
+====
+----
+...
+    Liveness:   http-get http://:8080/health delay=10s timeout=1s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:8080/health delay=5s timeout=1s period=5s #success=1 #failure=3
+...
+----
+====
+
+=== Scale up
+
+Scale to 3 replicas:
+
+[source,role="execute"]
+----
+oc scale deployment resilience-demo --replicas=3
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment.apps/resilience-demo scaled
+----
+====
+
+Wait for all 3 pods to be ready:
+
+[source,role="execute"]
+----
+oc get pods --selector deployment=resilience-demo
+----
+
+[%collapsible]
+.Expected output
+====
+----
+NAME                              READY   STATUS    RESTARTS   AGE
+resilience-demo-6b8c9d7f5-abc12   1/1     Running   0          2m
+resilience-demo-6b8c9d7f5-def34   1/1     Running   0          10s
+resilience-demo-6b8c9d7f5-ghi56   1/1     Running   0          10s
+----
+====
+
+Delete a pod:
+
+[source,role="execute"]
+----
+oc delete pod --selector deployment=resilience-demo --wait=false
+----
+
+[%collapsible]
+.Expected output
+====
+----
+pod "resilience-demo-6b8c9d7f5-abc12" deleted
+pod "resilience-demo-6b8c9d7f5-def34" deleted
+pod "resilience-demo-6b8c9d7f5-ghi56" deleted
+----
+====
+
+[NOTE]
+====
+The `--wait=false` flag returns immediately so you can check the route right away.
+All 3 pods will be deleted, but the ReplicaSet creates 3 replacements. The readiness
+probe prevents the Service from routing to pods that aren't ready yet.
+====
+
+Check the route while pods are restarting:
+
+[source,role="execute"]
+----
+curl -s https://$(oc get route resilience-demo -o jsonpath='{.spec.host}')/health
+----
+
+The response may succeed or fail depending on timing. Once the new pods pass their
+readiness probes, the Service resumes routing traffic.
+
+=== Add auto-scaling
+
+First, set resource requests so the HPA has metrics to work with:
+
+[source,role="execute"]
+----
+oc set resources deployment/resilience-demo --requests=cpu=50m,memory=64Mi --limits=cpu=200m,memory=128Mi
+----
+
+[%collapsible]
+.Expected output
+====
+----
+deployment.apps/resilience-demo resource requirements updated
+----
+====
+
+Now add the HPA:
+
+[source,role="execute"]
+----
+oc autoscale deployment/resilience-demo --min=1 --max=5 --cpu-percent=50
+----
+
+[%collapsible]
+.Expected output
+====
+----
+horizontalpodautoscaler.autoscaling/resilience-demo autoscaled
+----
+====
+
+Verify:
+
+[source,role="execute"]
+----
+oc get hpa
+----
+
+[%collapsible]
+.Expected output
+====
+----
+NAME              REFERENCE                    TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+resilience-demo   Deployment/resilience-demo   <unknown>/50%   1         5         3          10s
+----
+====
+
+The `<unknown>` for targets is normal. It takes about 60 seconds for the metrics
+server to report the first CPU measurement.
+
+== Module summary
+
+In this module, you proved that:
+
+* A single replica means any pod failure causes user-visible downtime
+* Multiple replicas let the Service route around failures instantly
+* Liveness probes detect unhealthy applications and restart them automatically
+* Readiness probes keep traffic away from pods that aren't ready to serve
+* The Horizontal Pod Autoscaler adds and removes pods based on actual CPU demand
+* All of this happens without any manual intervention
+
+Your DataSphere demo app can now survive pod crashes and traffic spikes. OpenShift
+handles the recovery, so you don't have to.
