@@ -3,10 +3,11 @@
 :toc: macro
 :toclevels: 2
 
-In this module, you'll deploy the DataSphere frontend on OpenShift and learn the 3 building
-blocks that make every OpenShift application work: *Pods*, *Services*, and *Routes*.
+In this module, you'll deploy the DataSphere demo app (a sample application that visualizes
+connections between global datacenters) on OpenShift and learn the 3 building blocks that make
+every OpenShift application work: *Pods*, *Services*, and *Routes*.
 
-First you'll see the finished result — the full DataSphere application already running, live map
+First you'll see the finished result — the DataSphere demo app already running, live map
 and all. Then you'll explore what OpenShift created to make it work. Finally, you'll deploy
 the frontend yourself from scratch using the web console.
 
@@ -40,7 +41,7 @@ Log in with these credentials:
 
 3 Projects have been provisioned for you:
 
-* `{user}-datasphere`: contains the pre-deployed DataSphere application — explore it in Sections 1 and 2
+* `{user}-datasphere`: contains the pre-deployed DataSphere demo app — explore it in Sections 1 and 2
 * `{user}-lab`: your clean workspace — you'll build here in Section 3
 * `{user}-lab-helm`: reserved for the Helm deployment exercise in Lab 2
 
@@ -48,7 +49,7 @@ NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes
 
 == Section 1: The Existing Deployment (3 minutes)
 
-The full DataSphere application is already running in your `{user}-datasphere` Project.
+The DataSphere demo app is already running in your `{user}-datasphere` Project.
 It was deployed automatically when your lab environment was provisioned.
 Before you build anything, let's see what the finished result looks like.
 
@@ -58,7 +59,7 @@ Before you build anything, let's see what the finished result looks like.
 +
 You will see three projects listed:
 +
-* `{user}-datasphere`: contains the pre-deployed DataSphere application
+* `{user}-datasphere`: contains the pre-deployed DataSphere demo app
 * `{user}-lab`: your clean workspace for building from scratch
 * `{user}-lab-helm`: reserved for the Helm exercise in Lab 2
 
@@ -189,16 +190,25 @@ flowchart TB
     B["🌐 Browser"]
     R["Route\n(datasphere-ui)"]
     S["Service\n(stable internal IP)"]
-    P["Pod\n(running container)"]
+    P1["Pod\n(datasphere-ui-n7rlv)"]
+    P2["Pod\n(datasphere-ui-fgh12)"]:::dashed
+    P3["Pod\n(datasphere-ui-zxv9k)"]:::dashed
 
     B -->|"HTTPS"| R
     R --> S
-    S -->|"label selector"| P
+    S -->|"label selector"| P1
+    S -->|"label selector"| P2
+    S -->|"label selector"| P3
+
+    classDef dashed stroke-dasharray: 5 5
 ....
 
 The Route knows which Service to send traffic to.
 The Service knows which Pods to forward requests to via label selectors.
 The Pod runs your container.
+
+The dashed pods aren't running right now, but if you scaled up, the Service would
+automatically route traffic to every pod with a matching label.
 
 == Section 3: Build it yourself (8 minutes)
 
@@ -333,7 +343,7 @@ image::console-guide/lab-01-17-route-details.png[Route details page showing data
 
 Click the *Location* link on the Route details page to open the application URL in your browser.
 
-The DataSphere UI loads — but the map is empty. No datacenter sites, no status data.
+The DataSphere demo app loads — but the map is empty. No datacenter sites, no status data.
 
 That's not a bug. The UI is running exactly as it should: it's already calling out to
 `datasphere-api:8080`, looking for the backend. But there's no pod answering that address yet.

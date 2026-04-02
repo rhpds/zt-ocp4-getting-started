@@ -3,10 +3,11 @@
 :toc: macro
 :toclevels: 2
 
-In this module, you'll deploy the DataSphere frontend on OpenShift and learn the 3 building
-blocks that make every OpenShift application work: *Pods*, *Services*, and *Routes*.
+In this module, you'll deploy the DataSphere demo app (a sample application that visualizes
+connections between global datacenters) on OpenShift and learn the 3 building blocks that make
+every OpenShift application work: *Pods*, *Services*, and *Routes*.
 
-First you'll see the finished result — the full DataSphere application already running, live map
+First you'll see the finished result — the DataSphere demo app already running, live map
 and all. Then you'll explore what OpenShift created to make it work. Finally, you'll deploy
 the frontend yourself from scratch.
 
@@ -86,7 +87,7 @@ oc whoami
 
 3 Projects have been provisioned for you:
 
-* `{user}-datasphere`: contains the pre-deployed DataSphere application — explore it in Sections 1 and 2
+* `{user}-datasphere`: contains the pre-deployed DataSphere demo app — explore it in Sections 1 and 2
 * `{user}-lab`: your clean workspace — you'll build here in Section 3
 * `{user}-lab-helm`: reserved for the Helm deployment exercise in Lab 2
 
@@ -94,15 +95,22 @@ NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes
 
 == Section 1: The Existing Deployment (3 minutes)
 
-The full DataSphere application is already running in your `{user}-datasphere` Project.
+The DataSphere demo app is already running in your `{user}-datasphere` Project.
 It was deployed automatically when your lab environment was provisioned.
 Before you build anything, let's see what the finished result looks like.
 
-=== Step 1.1: Switch to your pre-deployed Project and see what's running
+=== Step 1.1: Switch to your pre-deployed Project
 
 [source,role="execute",subs="attributes+"]
 ----
-oc project {user}-datasphere && oc get all
+oc project {user}-datasphere
+----
+
+Now see what's running:
+
+[source,role="execute"]
+----
+oc get all
 ----
 
 [%collapsible]
@@ -138,10 +146,10 @@ We'll come back to why that is in Section 2.
 
 [source,role="execute"]
 ----
-oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc get route datasphere-ui
 ----
 
-Open that URL in your browser. You'll see a live map of global datacenter sites.
+Copy the URL from the `HOST` column and open it in your browser. You'll see a live map of global datacenter sites.
 Click a site to toggle its status and watch the map respond in real time.
 
 That's a 2-tier application — a React frontend backed by a Python API — running on OpenShift,
@@ -176,7 +184,8 @@ datasphere-ui-5c8b4f6d9-n7rlv    1/1     Running   0          5m
 ----
 ====
 
-Inspect the frontend pod in detail:
+Inspect the frontend pod in detail. The `-l component=ui` flag selects pods by label instead of
+by name, so you don't need to know the exact pod name:
 
 [source,role="execute"]
 ----
@@ -201,6 +210,9 @@ Conditions:
 ----
 ====
 
+Notice the output shows key information about the pod: the container image it's running,
+the ports it exposes, its current status, and the labels that connect it to other resources.
+
 Check the application logs:
 
 [source,role="execute"]
@@ -216,6 +228,9 @@ oc logs -l component=ui
 10.x.x.x - - [31/Mar/2026:12:00:00 +0000] "GET /assets/index.js HTTP/1.1" 200 ...
 ----
 ====
+
+NOTE: If you see no output, that's normal. The web server only writes log entries when it
+receives requests. Open the application URL in your browser, then run the command again.
 
 NOTE: Pods are ephemeral. They can be created, destroyed, and replaced at any time.
 A *Deployment* manages this lifecycle and ensures the right number of pods are always running.
@@ -315,27 +330,44 @@ flowchart TB
     B["🌐 Browser"]
     R["Route\n(datasphere-ui)"]
     S["Service\n(stable internal IP)"]
-    P["Pod\n(running container)"]
+    P1["Pod\n(datasphere-ui-n7rlv)"]
+    P2["Pod\n(datasphere-ui-fgh12)"]:::dashed
+    P3["Pod\n(datasphere-ui-zxv9k)"]:::dashed
 
     B -->|"HTTPS"| R
     R --> S
-    S -->|"label selector"| P
+    S -->|"label selector"| P1
+    S -->|"label selector"| P2
+    S -->|"label selector"| P3
+
+    classDef dashed stroke-dasharray: 5 5
 ....
 
 The Route knows which Service to send traffic to.
 The Service knows which Pods to forward requests to via label selectors.
 The Pod runs your container.
 
+The dashed pods aren't running right now, but if you scaled up, the Service would
+automatically route traffic to every pod with a matching label.
+
 == Section 3: Build it yourself (8 minutes)
 
 Now that you understand the pieces, let's build the frontend from scratch.
-Switch to your clean lab Project and deploy the DataSphere UI from its container image:
 
 === Step 3.1: Deploy the application
 
+Switch to your clean lab Project:
+
 [source,role="execute",subs="attributes+"]
 ----
-oc project {user}-lab && oc new-app {datasphere_ui_image} --name=datasphere-ui
+oc project {user}-lab
+----
+
+Deploy the DataSphere demo app UI from its container image:
+
+[source,role="execute",subs="attributes+"]
+----
+oc new-app {datasphere_ui_image} --name=datasphere-ui
 ----
 
 [%collapsible]
@@ -403,7 +435,7 @@ your app at this address, but it's not yet accessible from outside.
 
 [source,role="execute"]
 ----
-oc create route edge --service=datasphere-ui --insecure-policy=Redirect
+oc create route edge --service=datasphere-ui
 ----
 
 [%collapsible]
@@ -418,12 +450,12 @@ route.route.openshift.io/datasphere-ui created
 
 [source,role="execute"]
 ----
-oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc get route datasphere-ui
 ----
 
-Open that URL in your browser.
+Copy the URL from the `HOST` column and open it in your browser.
 
-The DataSphere UI loads — but the map is empty. No datacenter sites, no status data.
+The DataSphere demo app loads — but the map is empty. No datacenter sites, no status data.
 
 That's not a bug. The UI is running exactly as it should: it's already calling out to
 `datasphere-api:8080`, looking for the backend. But there's no pod answering that address yet.
