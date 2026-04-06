@@ -125,7 +125,7 @@ datasphere-ui-7c9d8e6f4-m3n7p   1/1     Running   0          10m
 
 [source,role="execute",subs="attributes+"]
 ----
-oc delete pod datasphere-ui-7c9d8e6f4-m3n7p
+oc delete pod <your-pod-name>
 ----
 
 [%collapsible]
@@ -218,7 +218,7 @@ Copy one pod name from the output and delete it:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc delete pod datasphere-ui-7c9d8e6f4-pq8x2
+oc delete pod <your-pod-name>
 ----
 
 [NOTE]
@@ -281,24 +281,46 @@ on every API request, like a real app processing heavier queries under load. The
 effect is the same: each pod's CPU usage climbs, and eventually the platform needs
 to add more capacity.
 
-Start watching the HPA and per-pod CPU before you trigger the load:
+The following command combines several views into a live dashboard. You can also
+explore these metrics in the OpenShift web console for a more visual experience.
 
 [source,role="execute"]
 ----
-watch -n 2 "oc get hpa; echo; oc adm top pods --selector component=api"
+watch -n 2 "echo '=== Auto-Scaler ==='; oc get hpa; echo; echo '=== Pod CPU ==='; oc adm top pods --selector component=api; echo; echo '=== Pods ==='; oc get pods --selector component=api; echo; echo '=== HPA Details ==='; oc describe hpa datasphere-api"
 ----
 
 [%collapsible]
 .Expected output (initial state)
 ====
 ----
+=== Auto-Scaler ===
 NAME              REFERENCE                    TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
 datasphere-api    Deployment/datasphere-api    26%/50%   1         5         3          15m
 
+=== Pod CPU ===
 NAME                              CPU(cores)   MEMORY(bytes)
 datasphere-api-5d4f8b7c9-abc12   7m           62Mi
 datasphere-api-5d4f8b7c9-def34   6m           59Mi
 datasphere-api-5d4f8b7c9-ghi56   6m           61Mi
+
+=== Pods ===
+NAME                              READY   STATUS    RESTARTS   AGE
+datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          5m
+datasphere-api-5d4f8b7c9-def34   1/1     Running   0          5m
+datasphere-api-5d4f8b7c9-ghi56   1/1     Running   0          5m
+
+=== HPA Details ===
+Name:                          datasphere-api
+Reference:                     Deployment/datasphere-api
+Metrics:                       ( current / target )
+  resource cpu on pods:        26% / 50%
+Min replicas:                  1
+Max replicas:                  5
+Conditions:
+  AbleToScale     True    ReadyForNewScale
+  ScalingActive   True    ValidMetricFound
+  ScalingLimited  False   DesiredWithinRange
+Events:           <none>
 ----
 ====
 
@@ -308,25 +330,44 @@ The pod CPU numbers may lag a few seconds behind the HPA row: both pull from the
 metrics server, but on slightly different intervals.
 ====
 
-Now drag the slider to about *80%*.
+Now drag the slider to about *50%*.
 
 Watch the terminal. Within about 30 seconds, the CPU percentage climbs past the 50%
 threshold and the HPA increases the replica count from 3 to 4, then 5. New pod rows
-appear in the lower table, and the per-pod CPU numbers drop as the load distributes.
+appear in the Pods and Pod CPU sections, and the per-pod numbers drop as load distributes.
+The HPA Details section shows scaling events at the bottom as they happen.
 
 [%collapsible]
 .Expected output (after ~30 seconds)
 ====
 ----
+=== Auto-Scaler ===
 NAME              REFERENCE                    TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
-datasphere-api    Deployment/datasphere-api    78%/50%    1         5         5          16m
+datasphere-api    Deployment/datasphere-api    63%/50%    1         5         5          16m
 
+=== Pod CPU ===
 NAME                              CPU(cores)   MEMORY(bytes)
 datasphere-api-5d4f8b7c9-abc12   18m          62Mi
 datasphere-api-5d4f8b7c9-def34   22m          59Mi
 datasphere-api-5d4f8b7c9-ghi56   21m          61Mi
 datasphere-api-5d4f8b7c9-xyz99   8m           45Mi
 datasphere-api-5d4f8b7c9-wv3r2   7m           44Mi
+
+=== Pods ===
+NAME                              READY   STATUS    RESTARTS   AGE
+datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          5m
+datasphere-api-5d4f8b7c9-def34   1/1     Running   0          5m
+datasphere-api-5d4f8b7c9-ghi56   1/1     Running   0          5m
+datasphere-api-5d4f8b7c9-xyz99   1/1     Running   0          22s
+datasphere-api-5d4f8b7c9-wv3r2   1/1     Running   0          10s
+
+=== HPA Details ===
+...
+Events:
+  Type    Reason             Age   Message
+  ----    ------             ----  -------
+  Normal  SuccessfulRescale  30s   New size: 4; reason: cpu resource utilization above target
+  Normal  SuccessfulRescale  15s   New size: 5; reason: cpu resource utilization above target
 ----
 ====
 
@@ -439,11 +480,12 @@ values. Instead of running 10 separate `oc create` commands, you run 1 `helm ins
 
 [TIP]
 ====
-This chart lives in a Gitea repository that was provisioned for this lab. We're not
-diving into GitOps in this module (that's a future lab), but if you're curious, you
-can browse the chart repository at `{gitea_url}` or inspect the chart's default values with:
+If you're curious about the default values for the chart you're about to install, run:
 
  helm show values {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
+
+This reads directly from the package — the same values that will be applied unless you
+override them with `--set`.
 ====
 
 Install the DataSphere demo app using Helm, with resilience features deliberately
@@ -622,23 +664,43 @@ A few settings worth knowing about the HPA you just created:
 * **Multiple metrics**: HPA can scale on CPU, memory, custom metrics, or even external
   metrics like message queue depth. CPU is the most common starting point.
 
-Now watch the HPA and per-pod CPU live:
+The following command combines several views into a live dashboard. You can also
+explore these metrics in the OpenShift web console for a more visual experience.
 
 [source,role="execute"]
 ----
-watch -n 2 "oc get hpa; echo; oc adm top pods --selector component=api"
+watch -n 2 "echo '=== Auto-Scaler ==='; oc get hpa; echo; echo '=== Pod CPU ==='; oc adm top pods --selector component=api; echo; echo '=== Pods ==='; oc get pods --selector component=api; echo; echo '=== HPA Details ==='; oc describe hpa datasphere-api"
 ----
 
 [%collapsible]
 .Expected output (initial state)
 ====
 ----
+=== Auto-Scaler ===
 NAME              REFERENCE                    TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
 datasphere-api    Deployment/datasphere-api    <unknown>/50%   2         5         2          60s
 
+=== Pod CPU ===
 NAME                              CPU(cores)   MEMORY(bytes)
 datasphere-api-6b8c9d7f5-x4k2m   6m           62Mi
 datasphere-api-6b8c9d7f5-y7p3n   6m           58Mi
+
+=== Pods ===
+NAME                              READY   STATUS    RESTARTS   AGE
+datasphere-api-6b8c9d7f5-x4k2m   1/1     Running   0          60s
+datasphere-api-6b8c9d7f5-y7p3n   1/1     Running   0          60s
+
+=== HPA Details ===
+Name:                          datasphere-api
+Reference:                     Deployment/datasphere-api
+Metrics:                       ( current / target )
+  resource cpu on pods:        <unknown> / 50%
+Min replicas:                  2
+Max replicas:                  5
+Conditions:
+  AbleToScale     True    ReadyForNewScale
+  ScalingActive   False   FailedGetScale
+Events:           <none>
 ----
 ====
 
@@ -648,10 +710,11 @@ The pod CPU numbers may lag a few seconds behind the HPA row: both pull from the
 metrics server, but on slightly different intervals.
 ====
 
-Drag the Simulated Traffic panel slider to about *80%*.
+Drag the Simulated Traffic panel slider to about *50%*.
 
 The CPU percentage climbs, replica count increases, and new pod rows appear. Watch the
-per-pod CPU numbers drop as the new replicas join and share the load.
+per-pod CPU numbers drop as the new replicas join and share the load. The HPA Details
+section shows scaling events at the bottom as they happen.
 
 Now slide back to *0%*. The HPA will begin scaling down, but it takes longer than
 you saw in Section 1. Your HPA uses the production default: a 5-minute stabilization
@@ -660,9 +723,6 @@ purposes. In production, the longer window prevents oscillation if load fluctuat
 
 You don't need to wait for the full scale-down. Press `Ctrl+C` to stop the watch and
 move on.
-
-You don't need to wait for the full scale-down. Press `Ctrl+C` to stop the watch
-and move on.
 
 === Add health probes
 
