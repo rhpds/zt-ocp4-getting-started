@@ -251,8 +251,9 @@ down as CPU usage drops.
 [NOTE]
 ====
 The HPA scales up quickly (within 15 seconds of crossing the threshold) but scales
-down slowly (5 minutes of sustained low usage by default). This is deliberate: rapid
-scale-down could cause oscillation if load fluctuates.
+down more slowly. We've set the scale-down stabilization window to 20 seconds for
+the sake of this demo, but in production you'd leave it at the default (5 minutes)
+to prevent oscillation if load fluctuates.
 ====
 
 == Section 2: Build it yourself
