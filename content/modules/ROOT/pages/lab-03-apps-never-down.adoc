@@ -105,19 +105,19 @@ those features by breaking things and watching OpenShift respond.
 
 === Kill a pod
 
-Check how many API pods are running:
+Check how many UI pods are running:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc get pods --selector component=api
+oc get pods --selector component=ui
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-NAME                              READY   STATUS    RESTARTS   AGE
-datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          10m
+NAME                             READY   STATUS    RESTARTS   AGE
+datasphere-ui-7c9d8e6f4-m3n7p   1/1     Running   0          10m
 ----
 ====
 
@@ -125,33 +125,46 @@ datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          10m
 
 [source,role="execute",subs="attributes+"]
 ----
-oc delete pod --selector component=api
+oc delete pod datasphere-ui-7c9d8e6f4-m3n7p
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-pod "datasphere-api-5d4f8b7c9-abc12" deleted
+pod "datasphere-ui-7c9d8e6f4-m3n7p" deleted
 ----
 ====
 
-Switch to the browser. Watch for the "API unreachable" warning in the top status bar.
-The warning appears briefly, then clears as the replacement pod starts.
+[NOTE]
+====
+Use the pod name from the `oc get pods` output above — yours will be different.
+====
+
+Switch to the browser. The page goes blank: your only UI pod is gone and there's nothing
+to serve the request. Within a few seconds, OpenShift creates a replacement and the page
+comes back.
+
+[TIP]
+====
+If you wanted to delete a pod without looking up the name first, you can use:
+
+ oc delete pod $(oc get pod --selector component=ui -o jsonpath='{.items[0].metadata.name}')
+====
 
 Check the pods again:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc get pods --selector component=api
+oc get pods --selector component=ui
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-NAME                              READY   STATUS    RESTARTS   AGE
-datasphere-api-5d4f8b7c9-xyz99   1/1     Running   0          8s
+NAME                             READY   STATUS    RESTARTS   AGE
+datasphere-ui-7c9d8e6f4-pq8x2   1/1     Running   0          8s
 ----
 ====
 
@@ -161,18 +174,18 @@ is user-visible.
 
 === Fix it with replicas
 
-Scale the API deployment to 3 replicas:
+Scale the UI deployment to 3 replicas:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc scale deployment datasphere-api --replicas=3
+oc scale deployment datasphere-ui --replicas=3
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-deployment.apps/datasphere-api scaled
+deployment.apps/datasphere-ui scaled
 ----
 ====
 
@@ -180,36 +193,41 @@ Watch the new pods come up:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc get pods --selector component=api
+oc get pods --selector component=ui
 ----
 
 [%collapsible]
 .Expected output
 ====
 ----
-NAME                              READY   STATUS    RESTARTS   AGE
-datasphere-api-5d4f8b7c9-abc12   1/1     Running   0          5m
-datasphere-api-5d4f8b7c9-def34   1/1     Running   0          12s
-datasphere-api-5d4f8b7c9-ghi56   1/1     Running   0          12s
+NAME                             READY   STATUS    RESTARTS   AGE
+datasphere-ui-7c9d8e6f4-pq8x2   1/1     Running   0          5m
+datasphere-ui-7c9d8e6f4-rs1k9   1/1     Running   0          12s
+datasphere-ui-7c9d8e6f4-tv4j6   1/1     Running   0          12s
 ----
 ====
 
-Now delete a pod again:
+Now pick 1 pod and delete it:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc delete pod --selector component=api --field-selector=status.phase=Running --wait=false
+oc get pods --selector component=ui
+----
+
+Copy one pod name from the output and delete it:
+
+[source,role="execute",subs="attributes+"]
+----
+oc delete pod datasphere-ui-7c9d8e6f4-pq8x2
 ----
 
 [NOTE]
 ====
-The `--wait=false` flag returns immediately so you can check the app right away.
-This command deletes all running API pods, but the ReplicaSet will create 3
-replacements.
+Use the pod name from your output above — yours will be different.
 ====
 
-Switch to the browser. This time: no warning. The map stayed live the entire time.
-The Service routed traffic to the surviving pods while replacements started.
+Switch to the browser. This time: no outage. The map stayed live the entire time.
+The Service routed traffic to the 2 surviving pods while the replacement started.
 
 [NOTE]
 ====
@@ -221,8 +239,18 @@ why production workloads always run more than 1 replica.
 [[auto-scaling-under-load]]
 === Auto-scaling under load
 
+So far you've been working with the UI deployment. Now let's look at the API — that's
+where the resilience features live: the auto-scaler, health probes, and resource limits.
+
 You just scaled manually. That works, but it requires you to be watching. What if
-traffic spikes at 3am? The Horizontal Pod Autoscaler (HPA) handles this automatically.
+traffic spikes at 3am?
+
+The Horizontal Pod Autoscaler (HPA) is a Kubernetes controller that watches CPU and
+memory metrics and automatically adjusts the number of running pods. It needs resource
+requests defined on the pod to have a baseline to measure against, and it relies on the
+cluster's metrics server to collect live data. Without the HPA, scaling is a manual
+decision: someone has to notice load is high and act. With it, the platform handles
+scaling for you.
 
 First, check the current HPA status:
 
@@ -236,15 +264,15 @@ oc get hpa
 ====
 ----
 NAME              REFERENCE                    TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-datasphere-api    Deployment/datasphere-api    2%/50%    1         5         3          15m
+datasphere-api    Deployment/datasphere-api    26%/50%   1         5         3          15m
 ----
 ====
 
-The `TARGETS` column shows `2%/50%`: current CPU utilization is 2%, and the HPA will
+The `TARGETS` column shows `26%/50%`: current CPU utilization is 26%, and the HPA will
 scale up when it crosses 50%.
 
 Now look at the DataSphere app in your browser. At the bottom of the page, you'll see
-the *Load Control Panel*: a slider, plus real-time stats showing simulated traffic
+the *Simulated Traffic panel*: a slider, plus real-time stats showing simulated traffic
 percentage, per-pod load, and the current replica count.
 
 In production, CPU load increases because more users arrive or workloads get heavier.
@@ -253,14 +281,38 @@ on every API request, like a real app processing heavier queries under load. The
 effect is the same: each pod's CPU usage climbs, and eventually the platform needs
 to add more capacity.
 
-Drag the slider to about *80%*.
-
-Watch from the terminal:
+Start watching the HPA and per-pod CPU before you trigger the load:
 
 [source,role="execute"]
 ----
-watch oc get hpa
+watch -n 2 "oc get hpa; echo; oc adm top pods --selector component=api"
 ----
+
+[%collapsible]
+.Expected output (initial state)
+====
+----
+NAME              REFERENCE                    TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+datasphere-api    Deployment/datasphere-api    26%/50%   1         5         3          15m
+
+NAME                              CPU(cores)   MEMORY(bytes)
+datasphere-api-5d4f8b7c9-abc12   7m           62Mi
+datasphere-api-5d4f8b7c9-def34   6m           59Mi
+datasphere-api-5d4f8b7c9-ghi56   6m           61Mi
+----
+====
+
+[NOTE]
+====
+The pod CPU numbers may lag a few seconds behind the HPA row: both pull from the
+metrics server, but on slightly different intervals.
+====
+
+Now drag the slider to about *80%*.
+
+Watch the terminal. Within about 30 seconds, the CPU percentage climbs past the 50%
+threshold and the HPA increases the replica count from 3 to 4, then 5. New pod rows
+appear in the lower table, and the per-pod CPU numbers drop as the load distributes.
 
 [%collapsible]
 .Expected output (after ~30 seconds)
@@ -268,19 +320,17 @@ watch oc get hpa
 ----
 NAME              REFERENCE                    TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
 datasphere-api    Deployment/datasphere-api    78%/50%    1         5         5          16m
+
+NAME                              CPU(cores)   MEMORY(bytes)
+datasphere-api-5d4f8b7c9-abc12   18m          62Mi
+datasphere-api-5d4f8b7c9-def34   22m          59Mi
+datasphere-api-5d4f8b7c9-ghi56   21m          61Mi
+datasphere-api-5d4f8b7c9-xyz99   8m           45Mi
+datasphere-api-5d4f8b7c9-wv3r2   7m           44Mi
 ----
 ====
 
-The CPU percentage climbs past the 50% threshold, and the HPA increases the replica
-count from 3 to 4, then 5.
-
-Switch to the browser. The Load Control Panel shows the per-pod load dropping as new
-pods join and share the work.
-
-Now slide back to *0%*.
-
-Watch the terminal. The HPA scales the pods back down over about 20 seconds as CPU
-usage drops.
+Now slide back to *0%*. Watch the replica count drop back down over about 20 seconds.
 
 Press `Ctrl+C` to stop the watch.
 
@@ -292,8 +342,16 @@ this demo. In production, the default is 5 minutes: this prevents the HPA from
 flapping if load fluctuates up and down.
 ====
 
-You just saw the platform do what you did manually in the previous step, but without
-you being there. No alerts, no manual intervention, no 3am page.
+You just watched the platform do what you did manually — but without you being there.
+Pod count went from 3 to 5 and back, automatically, based on real CPU data. No one
+had to be awake. No alert fired. No manual intervention.
+
+[NOTE]
+====
+If you also want to see what happens when a pod is running but *broken* — not crashed,
+just sick — the next demo shows how health probes handle that. Otherwise, jump straight
+to <<section-2-build-it-yourself,Section 2: Build it yourself>>.
+====
 
 === Health probe: detect and fix a sick pod
 
@@ -371,7 +429,22 @@ Now using project "{user}-lab" on server "{openshift_api_url}".
 ----
 ====
 
+[[section-2-build-it-yourself]]
 === Deploy the full stack
+
+Helm is one of many ways to deploy a fully configured application on OpenShift. A Helm
+chart is a package that bundles together all the Kubernetes manifests for an app:
+Deployments, Services, Routes, config — into a single installable unit with configurable
+values. Instead of running 10 separate `oc create` commands, you run 1 `helm install`.
+
+[TIP]
+====
+This chart lives in a Gitea repository that was provisioned for this lab. We're not
+diving into GitOps in this module (that's a future lab), but if you're curious, you
+can browse the chart repository at `{gitea_url}` or inspect the chart's default values with:
+
+ helm show values {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
+====
 
 Install the DataSphere demo app using Helm, with resilience features deliberately
 disabled:
@@ -434,6 +507,40 @@ redis-5f8a7b9c6-q2w4r            1/1     Running   0          30s
 ----
 ====
 
+Let's see everything the chart created:
+
+[source,role="execute"]
+----
+oc get all
+----
+
+[%collapsible]
+.Expected output (key resources)
+====
+----
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/datasphere-api-6b8c9d7f5-x4k2m   1/1     Running   0          30s
+pod/datasphere-ui-7c9d8e6f4-m3n7p    1/1     Running   0          30s
+pod/redis-5f8a7b9c6-q2w4r            1/1     Running   0          30s
+
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/datasphere-api  ClusterIP   172.30.45.123    <none>        8080/TCP   30s
+service/datasphere-ui   ClusterIP   172.30.78.200    <none>        8080/TCP   30s
+service/redis           ClusterIP   172.30.12.99     <none>        6379/TCP   30s
+
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/datasphere-api   1/1     1            1           30s
+deployment.apps/datasphere-ui    1/1     1            1           30s
+deployment.apps/redis            1/1     1            1           30s
+
+NAME                                        HOST/PORT
+route.route.openshift.io/datasphere-ui      datasphere-ui-{user}-lab.{openshift_cluster_ingress_domain}
+----
+====
+
+1 Deployment, 1 Service, and 1 pod for each component: API, UI, and Redis. Plus a Route
+pointing to the UI. Helm created all of that from a single command.
+
 Get the app URL and open it in a new browser tab:
 
 [source,role="execute"]
@@ -441,7 +548,7 @@ Get the app URL and open it in a new browser tab:
 oc get route datasphere-ui
 ----
 
-You should see the DataSphere map with the Load Control Panel at the bottom.
+You should see the DataSphere map with the Simulated Traffic panel at the bottom.
 
 === Add auto-scaling
 
@@ -464,11 +571,11 @@ deployment.apps/datasphere-api resource requirements updated
 ----
 ====
 
-Now create the HPA:
+You saw this in action in Section 1 — now you're configuring it yourself.
 
 [source,role="execute"]
 ----
-oc autoscale deployment/datasphere-api --min=1 --max=5 --cpu-percent=50
+oc autoscale deployment/datasphere-api --min=2 --max=5 --cpu-percent=50
 ----
 
 [%collapsible]
@@ -478,6 +585,9 @@ oc autoscale deployment/datasphere-api --min=1 --max=5 --cpu-percent=50
 horizontalpodautoscaler.autoscaling/datasphere-api autoscaled
 ----
 ====
+
+We set the minimum to 2: a reasonable baseline that gives you some failover if a pod
+crashes before the ReplicaSet spins up a replacement.
 
 Check the HPA:
 
@@ -491,40 +601,14 @@ oc get hpa
 ====
 ----
 NAME              REFERENCE                    TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
-datasphere-api    Deployment/datasphere-api    <unknown>/50%   1         5         1          10s
+datasphere-api    Deployment/datasphere-api    <unknown>/50%   2         5         2          10s
 ----
 ====
 
 The `<unknown>` for targets is normal. It takes about 60 seconds for the metrics
 server to report the first CPU measurement.
 
-==== Explore HPA settings
-
-Look at the full HPA specification:
-
-[source,role="execute"]
-----
-oc describe hpa datasphere-api
-----
-
-[%collapsible]
-.Expected output (key fields)
-====
-----
-Name:                          datasphere-api
-Reference:                     Deployment/datasphere-api
-Metrics:                       ( current / target )
-  resource cpu on pods:        <unknown> / 50%
-Min replicas:                  1
-Max replicas:                  5
-Conditions:
-  AbleToScale     True    ...
-  ScalingActive   False   ...
-  ScalingLimited  False   ...
-----
-====
-
-A few settings worth knowing:
+A few settings worth knowing about the HPA you just created:
 
 * **`--cpu-percent` threshold**: We set 50%. You could set 70% for apps that handle load
   spikes well, or 30% for latency-sensitive services that need headroom before scaling
@@ -538,35 +622,65 @@ A few settings worth knowing:
 * **Multiple metrics**: HPA can scale on CPU, memory, custom metrics, or even external
   metrics like message queue depth. CPU is the most common starting point.
 
-==== Test auto-scaling
-
-Open the DataSphere app in `{user}-lab` in your browser. Use the Load Control Panel
-slider: drag it to about *80%*.
-
-Watch the HPA respond:
+Now watch the HPA and per-pod CPU live:
 
 [source,role="execute"]
 ----
-watch oc get hpa
+watch -n 2 "oc get hpa; echo; oc adm top pods --selector component=api"
 ----
 
-The CPU percentage climbs, and the replica count increases.
+[%collapsible]
+.Expected output (initial state)
+====
+----
+NAME              REFERENCE                    TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+datasphere-api    Deployment/datasphere-api    <unknown>/50%   2         5         2          60s
 
-Switch to the browser. The Load Control Panel shows per-pod load dropping as new
-replicas share the work.
+NAME                              CPU(cores)   MEMORY(bytes)
+datasphere-api-6b8c9d7f5-x4k2m   6m           62Mi
+datasphere-api-6b8c9d7f5-y7p3n   6m           58Mi
+----
+====
+
+[NOTE]
+====
+The pod CPU numbers may lag a few seconds behind the HPA row: both pull from the
+metrics server, but on slightly different intervals.
+====
+
+Drag the Simulated Traffic panel slider to about *80%*.
+
+The CPU percentage climbs, replica count increases, and new pod rows appear. Watch the
+per-pod CPU numbers drop as the new replicas join and share the load.
 
 Now slide back to *0%*. The HPA will begin scaling down, but it takes longer than
 you saw in Section 1. Your HPA uses the production default: a 5-minute stabilization
 window before removing pods. The pre-deployed DataSphere uses 20 seconds for demo
 purposes. In production, the longer window prevents oscillation if load fluctuates.
 
+You don't need to wait for the full scale-down. Press `Ctrl+C` to stop the watch and
+move on.
+
 You don't need to wait for the full scale-down. Press `Ctrl+C` to stop the watch
 and move on.
 
 === Add health probes
 
-Add a liveness probe. This tells OpenShift to restart the container if the application
-stops responding:
+The HPA handles capacity: too much load, add pods. But there's a failure mode it can't
+fix: a pod that's alive, using normal CPU, but silently broken. The process is running,
+metrics look fine, but every request hangs or returns an error.
+
+This happens more often than you'd think. A thread pool deadlock: the JVM is up, memory
+is stable, but every incoming request queues behind a lock that never releases. Or a
+database connection pool exhausted on startup: the pod is running but can't serve traffic
+until connections are established. In both cases, the HPA sees no anomaly and takes no
+action. That's what health probes are for.
+
+A liveness probe asks: "is this container alive?" If the check fails enough times, OpenShift
+restarts the container. A readiness probe asks: "can this container handle traffic right now?"
+If not, the Service stops routing requests to it until it recovers.
+
+Add a liveness probe:
 
 [source,role="execute"]
 ----
@@ -637,8 +751,6 @@ A few settings worth knowing:
   a failure. The default is 1 second. Increase this for apps with slow health check
   endpoints or endpoints that depend on downstream services.
 
-==== Test health probes
-
 Break one pod's health:
 
 [source,role="execute"]
@@ -668,15 +780,13 @@ Press `Ctrl+C` to stop the watch.
 
 == Module summary
 
-In this module, you proved that:
+Imagine running 500 services in production. Pods crash at 3am. Traffic spikes every
+Friday afternoon. A memory leak quietly degrades 1 pod in a 10-pod deployment.
 
-* A single replica means any pod failure causes user-visible downtime
-* Multiple replicas let the Service route around failures instantly
-* The Horizontal Pod Autoscaler adds and removes pods based on actual CPU demand: no
-  manual scaling needed
-* Liveness probes detect unhealthy applications and restart them automatically
-* Readiness probes keep traffic away from pods that aren't ready to serve
-* All of this is built into the platform: no custom code, no external tools
+With what you configured today, none of that requires a human. The platform detects the
+crashed pod and replaces it. The HPA watches CPU climb and adds capacity before users
+notice slowness. The liveness probe catches the degraded pod and restarts it before the
+error rate budges. No alert fires. No one gets paged. No one has to be awake.
 
-Your DataSphere demo app can now survive pod crashes and traffic spikes. OpenShift
-handles the recovery, so you don't have to.
+You configured this on 1 app. The same patterns run on every app in the cluster — and
+they cost you 3 commands and about 5 minutes to set up.
