@@ -85,11 +85,13 @@ oc whoami
 
 === Your lab Projects
 
-3 Projects have been provisioned for you:
+5 Projects have been provisioned for you:
 
 * `{user}-datasphere`: contains the pre-deployed DataSphere demo app — explore it in Sections 1 and 2
 * `{user}-lab`: your clean workspace — you'll build here in Section 3
 * `{user}-lab-helm`: reserved for the Helm deployment exercise in Lab 2
+* `{user}-gitops`: hosts your personal ArgoCD instance for Lab 4
+* `{user}-gitops-lab`: your GitOps deployment workspace for Lab 4
 
 NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes your resources and controls access.
 
