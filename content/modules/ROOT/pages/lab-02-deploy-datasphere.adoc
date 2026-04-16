@@ -56,10 +56,10 @@ Get the URL and open it in your browser — the map will be empty. That's expect
 
 [source,role="execute"]
 ----
-oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc get route datasphere-ui
 ----
 
-Continue to <<section-1>>.
+Copy the URL from the `HOST` column. Continue to <<section-1>>.
 
 [[section-1]]
 == Section 1: See the finished application (2 minutes)
@@ -69,10 +69,35 @@ Before you build anything, confirm what the finished result looks like.
 
 [source,role="execute",subs="attributes+"]
 ----
-oc project {user}-datasphere && oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc project {user}-datasphere
 ----
 
-Open that URL. The map is fully populated — datacenter sites with live status and capacity data.
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Now using project "{user}-datasphere" on server "{openshift_api_url}".
+----
+====
+
+[source,role="execute"]
+----
+oc get route datasphere-ui
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+NAME            HOST/PORT                                                                    PATH   SERVICES        PORT   TERMINATION     WILDCARD
+datasphere-ui   datasphere-ui-{user}-datasphere.{openshift_cluster_ingress_domain}                 datasphere-ui   8080   edge/Redirect   None
+----
+====
+
+Copy the URL from the `HOST` column and open it in your browser.
+The map is fully populated — datacenter sites with live status and capacity data.
 This is where you're headed.
 
 == Section 2: Add the backend via Source-to-Image (8 minutes)
@@ -84,28 +109,24 @@ Switch back to your lab Project where `datasphere-ui` is already running:
 oc project {user}-lab
 ----
 
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Now using project "{user}-lab" on server "{openshift_api_url}".
+----
+====
+
 The UI is running but the map is empty. The frontend is already calling `datasphere-api:8080`
 on every page load — there's just nothing answering yet.
 
 === Step 2.1: Find your Gitea repository
 
 Your lab environment includes a personal Gitea instance with the DataSphere API source already
-loaded. Open the Gitea console:
-
-[source,role="execute",subs="attributes+"]
-----
-echo {gitea_url}
-----
-
-Log in with your lab credentials (`{user}` / `{password}`). You should see a `datasphere-api`
-repository already in your account — this is the source code you'll build from.
-
-Confirm the repository URL:
-
-[source,role="execute",subs="attributes+"]
-----
-echo {gitea_url}/{user}/datasphere-api
-----
+loaded. Open Gitea from the URL in your connection details and log in with your lab credentials
+(`{user}` / `{password}`). You should see a `datasphere-api` repository in your account —
+that's the source code you'll build from in the next step.
 
 === Step 2.2: Build and deploy the API from source
 
@@ -190,8 +211,18 @@ Open the UI URL — the same URL from before:
 
 [source,role="execute"]
 ----
-oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc get route datasphere-ui
 ----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+NAME            HOST/PORT                                                               PATH   SERVICES        PORT   TERMINATION     WILDCARD
+datasphere-ui   datasphere-ui-{user}-lab.{openshift_cluster_ingress_domain}                   datasphere-ui   8080   edge/Redirect   None
+----
+====
 
 The map is now populated with datacenter sites. You didn't reconfigure the UI. You didn't update
 any hostnames or IP addresses. The moment `datasphere-api` came online as a Service in this
@@ -216,11 +247,27 @@ The DataSphere chart defines the same Deployments, Services, and Route you creat
 across the last two sections — but as a single, versioned, repeatable unit. Every team member
 who runs this command gets the same result.
 
-Switch to your pre-provisioned Helm Project and install the DataSphere chart:
+Switch to your pre-provisioned Helm Project:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc project {user}-lab-helm && helm install datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
+oc project {user}-lab-helm
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Now using project "{user}-lab-helm" on server "{openshift_api_url}".
+----
+====
+
+Install the DataSphere chart:
+
+[source,role="execute",subs="attributes+"]
+----
+helm install datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
 ----
 
 The first argument after `helm install` is the *release name* (`datasphere`). Helm uses it to
@@ -247,11 +294,11 @@ REVISION: 1
 `REVISION: 1` tells you this is the first install. Each `helm upgrade` increments the revision
 and Helm keeps the history — you can roll back to any previous revision if something goes wrong.
 
-Wait for both components:
+Wait for both components to roll out:
 
 [source,role="execute"]
 ----
-oc rollout status deployment/datasphere-ui && oc rollout status deployment/datasphere-api
+oc rollout status deployment/datasphere-ui
 ----
 
 [%collapsible]
@@ -259,6 +306,18 @@ oc rollout status deployment/datasphere-ui && oc rollout status deployment/datas
 ====
 ----
 deployment "datasphere-ui" successfully rolled out
+----
+====
+
+[source,role="execute"]
+----
+oc rollout status deployment/datasphere-api
+----
+
+[%collapsible]
+.Expected output
+====
+----
 deployment "datasphere-api" successfully rolled out
 ----
 ====
@@ -267,8 +326,18 @@ Open the application:
 
 [source,role="execute"]
 ----
-oc get route datasphere-ui -o jsonpath='{.spec.host}'
+oc get route datasphere-ui
 ----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+NAME            HOST/PORT                                                                    PATH   SERVICES        PORT   TERMINATION     WILDCARD
+datasphere-ui   datasphere-ui-{user}-lab-helm.{openshift_cluster_ingress_domain}                   datasphere-ui   8080   edge/Redirect   None
+----
+====
 
 Both tiers, fully operational, from a single command. Every resource you created across Lab 1
 and Lab 2 was created here in one shot — with no opportunity for steps to be missed or
@@ -282,6 +351,20 @@ map color palette. Try it without redeploying anything:
 helm upgrade datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz --set theme=mars
 ----
 
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Release "datasphere" has been upgraded. Happy Helming!
+NAME: datasphere
+LAST DEPLOYED: ...
+NAMESPACE: {user}-lab-helm
+STATUS: deployed
+REVISION: 2
+----
+====
+
 Helm re-renders only the resources that changed, applies them, and rolls the affected pod.
 Refresh the app in your browser — the map shifts to the Mars color scheme. Roll it back
 just as easily:
@@ -290,6 +373,20 @@ just as easily:
 ----
 helm upgrade datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
 ----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Release "datasphere" has been upgraded. Happy Helming!
+NAME: datasphere
+LAST DEPLOYED: ...
+NAMESPACE: {user}-lab-helm
+STATUS: deployed
+REVISION: 3
+----
+====
 
 NOTE: To remove the entire application and every resource it created: `helm uninstall datasphere`
 
