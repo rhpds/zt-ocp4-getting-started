@@ -59,7 +59,10 @@ Login successful.
 You have access to the following projects and can switch between them with 'oc project <projectname>':
 
   * {user}-datasphere
+    {user}-gitops
+    {user}-gitops-lab
     {user}-lab
+    {user}-lab-helm
 
 Using project "{user}-datasphere".
 Welcome! See 'oc help' to get started.
@@ -84,10 +87,12 @@ oc whoami
 
 === Your lab projects
 
-Two projects have been provisioned for you:
+Several projects have been provisioned for you. The ones you'll use in this lab:
 
 * `{user}-datasphere`: contains the pre-deployed DataSphere demo app -- explore it in Section 1
 * `{user}-lab`: your clean workspace -- you'll build here in Section 2 and Section 3
+
+You'll also see `{user}-gitops`, `{user}-gitops-lab`, and `{user}-lab-helm` -- those are used in later labs.
 
 NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes your resources and controls access.
 
@@ -131,30 +136,33 @@ oc get all
 .Expected output
 ====
 ----
-NAME                                  READY   STATUS    RESTARTS   AGE
-pod/datasphere-api-7d6f9b8c4-xk2pq   1/1     Running   0          5m
-pod/datasphere-ui-5c8b4f6d9-n7rlv    1/1     Running   0          5m
+NAME                                    READY   STATUS    RESTARTS   AGE
+pod/datasphere-api-7d464fc7c4-xxxxx     1/1     Running   0          5m
+pod/datasphere-redis-69c8864976-xxxxx   1/1     Running   0          5m
+pod/datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          5m
 
 NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
-service/datasphere-api   ClusterIP   172.30.14.22     <none>        8080/TCP   5m
-service/datasphere-ui    ClusterIP   172.30.198.47    <none>        8080/TCP   5m
+service/datasphere-api   ClusterIP   172.x.x.x        <none>        8080/TCP   5m
+service/datasphere-ui    ClusterIP   172.x.x.x        <none>        8080/TCP   5m
+service/redis            ClusterIP   172.x.x.x        <none>        6379/TCP   5m
 
-NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/datasphere-api   1/1     1            1           5m
-deployment.apps/datasphere-ui    1/1     1            1           5m
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/datasphere-api     1/1     1            1           5m
+deployment.apps/datasphere-redis   1/1     1            1           5m
+deployment.apps/datasphere-ui      1/1     1            1           5m
 
-NAME                                        DESIRED   CURRENT   READY   AGE
-replicaset.apps/datasphere-api-7d6f9b8c4   1         1         1       5m
-replicaset.apps/datasphere-ui-5c8b4f6d9    1         1         1       5m
+NAME                                                 REFERENCE                   TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/datasphere-api   Deployment/datasphere-api   cpu: 12%/50%   1         5         1          5m
 
-NAME                                   HOST/PORT
-route.route.openshift.io/datasphere-ui datasphere-ui-{user}-datasphere.apps.{cluster_subdomain}
+NAME                                     HOST/PORT
+route.route.openshift.io/datasphere-ui   datasphere-ui-{user}-datasphere.apps.{cluster_subdomain}
 ----
 ====
 
-Notice: two Pods, two Services, two Deployments -- but only one Route. Both components have a Service
-for internal communication, but only the frontend has a Route for external access.
-Let's explore why.
+Notice: three Pods, three Services, three Deployments -- but only one Route. The API and Redis
+have Services for internal communication, but only the frontend has a Route for external access.
+You'll also see a HorizontalPodAutoscaler -- we'll cover that in Lab 2.
+Let's explore why only the UI has a Route.
 
 === Step 1.3: Explore the Pod
 
@@ -172,9 +180,10 @@ oc get pods
 .Expected output
 ====
 ----
-NAME                              READY   STATUS    RESTARTS   AGE
-datasphere-api-7d6f9b8c4-xk2pq   1/1     Running   0          5m
-datasphere-ui-5c8b4f6d9-n7rlv    1/1     Running   0          5m
+NAME                                READY   STATUS    RESTARTS   AGE
+datasphere-api-7d464fc7c4-xxxxx     1/1     Running   0          5m
+datasphere-redis-69c8864976-xxxxx   1/1     Running   0          5m
+datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          5m
 ----
 ====
 
@@ -189,12 +198,14 @@ oc describe pod -l component=ui
 [%collapsible]
 .Expected output (key fields)
 ====
+[subs="attributes+"]
 ----
-Name:         datasphere-ui-5c8b4f6d9-n7rlv
+Name:         datasphere-ui-597f67c7bc-xxxxx
 Namespace:    {user}-datasphere
 Labels:       app=datasphere
+              component=ui
 Containers:
-  datasphere-ui:
+  ui:
     Image:    {datasphere_ui_image}
     Port:     8080/TCP
     State:    Running
@@ -391,7 +402,7 @@ oc new-app {datasphere_ui_image} --name=datasphere-ui
     service "datasphere-ui" created
 --> Success
     Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
-     'oc create route edge --service=datasphere-ui'
+     'oc expose service/datasphere-ui'
     Run 'oc status' to view your app.
 ----
 ====
@@ -432,8 +443,8 @@ oc get service datasphere-ui
 .Expected output
 ====
 ----
-NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-datasphere-ui   ClusterIP   172.30.x.x      <none>        8080/TCP   30s
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+datasphere-ui   ClusterIP   172.x.x.x       <none>        8080/TCP,8443/TCP   30s
 ----
 ====
 
@@ -527,8 +538,10 @@ oc new-app python~{gitea_url}/{user}/datasphere-api --name=datasphere-api
 ====
 
 Notice the `buildconfig` in the output -- that wasn't there when you deployed the UI from a
-pre-built image. The BuildConfig is the S2I build definition. OpenShift is now cloning the
-repository and running the build inside the cluster. Watch it happen:
+pre-built image. The BuildConfig is the S2I build definition. Also notice the `python`
+ImageStream -- OpenShift tracks the builder image separately from your application image.
+
+OpenShift is now cloning the repository and running the build inside the cluster. Watch it happen:
 
 [source,role="execute"]
 ----
@@ -627,15 +640,12 @@ Install the DataSphere chart -- this deploys UI, API, and Redis in one command:
 
 [source,role="execute",subs="attributes+"]
 ----
-helm install datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
+helm install datasphere {gitea_url}/gitea-admin/datasphere-gitops/archive/main.tar.gz
 ----
 
 The first argument after `helm install` is the *release name* (`datasphere`). Helm uses it to
-track this installation. The second argument is the chart location.
-
-NOTE: The same chart is also available in the OpenShift *Developer Catalog*. The URL above points
-at the Gitea instance in your lab environment, which hosts the chart alongside your source code
-repositories.
+track this installation. The second argument is the chart location -- a Helm chart stored in the
+Gitea repository as a Git archive.
 
 [%collapsible]
 .Expected output
@@ -647,6 +657,8 @@ LAST DEPLOYED: ...
 NAMESPACE: {user}-lab
 STATUS: deployed
 REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
 ----
 ====
 
@@ -678,9 +690,9 @@ Open the application:
 oc get route datasphere-ui -o jsonpath='{.spec.host}'
 ----
 
-Both tiers, fully operational, from a single command. Every resource you created across
-Section 2 was created here in one shot -- with no opportunity for steps to be missed or
-applied in the wrong order.
+All three components -- UI, API, and Redis -- fully operational, from a single command. Every
+resource you created across Section 2 was created here in one shot, plus a Redis database for
+data persistence, with no opportunity for steps to be missed or applied in the wrong order.
 
 === Step 3.4: See configuration in action
 
@@ -689,7 +701,7 @@ map color palette. Try it without redeploying anything:
 
 [source,role="execute",subs="attributes+"]
 ----
-helm upgrade datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz --set theme=mars
+helm upgrade datasphere {gitea_url}/gitea-admin/datasphere-gitops/archive/main.tar.gz --set theme=mars
 ----
 
 Helm re-renders only the resources that changed, applies them, and rolls the affected pod.
@@ -698,7 +710,7 @@ just as easily:
 
 [source,role="execute",subs="attributes+"]
 ----
-helm upgrade datasphere {gitea_url}/api/packages/gitea-admin/helm/datasphere-{datasphere_helm_version}.tgz
+helm upgrade datasphere {gitea_url}/gitea-admin/datasphere-gitops/archive/main.tar.gz
 ----
 
 NOTE: To remove the entire application and every resource it created: `helm uninstall datasphere`
