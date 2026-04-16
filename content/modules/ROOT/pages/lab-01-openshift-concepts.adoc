@@ -118,30 +118,39 @@ oc get all
 [%collapsible]
 .Expected output
 ====
+[subs="attributes+"]
 ----
-NAME                                  READY   STATUS    RESTARTS   AGE
-pod/datasphere-api-7d6f9b8c4-xk2pq   1/1     Running   0          5m
-pod/datasphere-ui-5c8b4f6d9-n7rlv    1/1     Running   0          5m
+NAME                                    READY   STATUS    RESTARTS   AGE
+pod/datasphere-api-7d464fc7c4-xk2pq    1/1     Running   0          5m
+pod/datasphere-redis-69c8864976-jdjsf   1/1     Running   0          5m
+pod/datasphere-ui-6569df74cd-wkpdc      1/1     Running   0          5m
 
 NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
 service/datasphere-api   ClusterIP   172.30.14.22     <none>        8080/TCP   5m
 service/datasphere-ui    ClusterIP   172.30.198.47    <none>        8080/TCP   5m
+service/redis            ClusterIP   172.30.79.136    <none>        6379/TCP   5m
 
-NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/datasphere-api   1/1     1            1           5m
-deployment.apps/datasphere-ui    1/1     1            1           5m
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/datasphere-api     1/1     1            1           5m
+deployment.apps/datasphere-redis   1/1     1            1           5m
+deployment.apps/datasphere-ui      1/1     1            1           5m
 
-NAME                                        DESIRED   CURRENT   READY   AGE
-replicaset.apps/datasphere-api-7d6f9b8c4   1         1         1       5m
-replicaset.apps/datasphere-ui-5c8b4f6d9    1         1         1       5m
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/datasphere-api-7d464fc7c4     1         1         1       5m
+replicaset.apps/datasphere-redis-69c8864976   1         1         1       5m
+replicaset.apps/datasphere-ui-6569df74cd      1         1         1       5m
 
-NAME                                   HOST/PORT
-route.route.openshift.io/datasphere-ui datasphere-ui-{user}-datasphere.apps.{cluster_subdomain}
+NAME                                                 REFERENCE                   TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/datasphere-api   Deployment/datasphere-api   cpu/50%   1         5         1          5m
+
+NAME                                     HOST/PORT
+route.route.openshift.io/datasphere-ui   datasphere-ui-{user}-datasphere.apps.{openshift_cluster_ingress_domain}
 ----
 ====
 
-Notice: 2 Pods, 2 Services, 2 Deployments — but only 1 Route. Both components have a Service
-for internal communication, but only the frontend has a Route for external access.
+Notice: 3 Pods, 3 Services, 3 Deployments — but only 1 Route.
+The API and Redis only need to be reachable from within the cluster, so they have Services but no Routes.
+Only the UI has a Route for external browser access.
 We'll come back to why that is in Section 2.
 
 === Step 1.3: Open the application
