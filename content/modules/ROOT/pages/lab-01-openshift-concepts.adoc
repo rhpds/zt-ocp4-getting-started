@@ -335,9 +335,14 @@ resolves it automatically. No Route needed.
 
 === How they connect
 
+++++
+<div id="arch-diagram" title="Click to open full size" style="cursor:zoom-in;">
+++++
+
 [mermaid]
 ....
-flowchart TB
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '18px'}}}%%
+flowchart LR
     B["🌐 Browser"]
     R["Route\n(datasphere-ui)"]
     S["Service\n(stable internal IP)"]
@@ -353,6 +358,19 @@ flowchart TB
 
     classDef dashed stroke-dasharray: 5 5
 ....
+
+++++
+</div>
+<script>
+document.getElementById('arch-diagram').addEventListener('click', function() {
+  var svg = this.querySelector('svg');
+  if (svg) {
+    var data = new XMLSerializer().serializeToString(svg);
+    window.open('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(data), '_blank');
+  }
+});
+</script>
+++++
 
 The Route knows which Service to send traffic to.
 The Service knows which Pods to forward requests to via label selectors.
@@ -373,6 +391,22 @@ Switch to your clean lab Project:
 ----
 oc project {user}-lab
 ----
+
+Confirm it is empty:
+
+[source,role="execute"]
+----
+oc get all
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+No resources found in {user}-lab namespace.
+----
+====
 
 Deploy the DataSphere demo app UI from its container image:
 
