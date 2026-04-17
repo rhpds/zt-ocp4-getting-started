@@ -355,7 +355,7 @@ image::lab-03-10-argocd-synced-after-change.png[ArgoCD showing Synced and Health
 
 === Step 3.5: Verify on the DataSphere map
 
-Reload the DataSphere app you opened in Step 2.4. A new hub dot appears in East Africa.
+Reload the link:https://datasphere-ui-{user}-gitops-lab.{openshift_cluster_ingress_domain}/[DataSphere app, window=_blank] you opened in Step 2.4. A new hub dot appears in East Africa.
 Backbone arcs connect Nairobi to all other major hubs globally.
 
 You made 1 commit. ArgoCD handled the rest.
