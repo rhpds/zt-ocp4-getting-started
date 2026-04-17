@@ -32,13 +32,7 @@ By the end of this lab, you'll be able to:
 
 === ArgoCD
 
-Your environment includes a personal ArgoCD instance. Open it now using the URL
-from your connection details:
-
-[source,subs="attributes+"]
-----
-{argocd_url}
-----
+Click the *ArgoCD* tab on the right side of this lab interface.
 
 Click *Log in via OpenShift* and use your existing lab credentials:
 
@@ -47,6 +41,9 @@ Click *Log in via OpenShift* and use your existing lab credentials:
 
 NOTE: ArgoCD uses your OpenShift login -- no separate account needed.
 The same credentials that work in the OpenShift console work here.
+
+TIP: To open ArgoCD in a separate browser window instead, use this URL from
+your connection details: `{argocd_url}`
 
 === OpenShift web console
 
@@ -284,12 +281,14 @@ updates itself. No `oc apply`. No Helm commands. Just a commit.
 
 === Step 3.1: Open your Gitea repository
 
-Open Gitea from your connection details or navigate directly:
+Click the *Gitea* tab on the right side of this lab interface, then navigate to
+your `datasphere-gitops` repository:
 
-[source,subs="attributes+"]
-----
-{gitea_url}/{user}/datasphere-gitops
-----
+* *Owner*: `{user}`
+* *Repository*: `datasphere-gitops`
+
+TIP: To open Gitea in a separate browser window instead, go to:
+`{gitea_url}/{user}/datasphere-gitops`
 
 Log in with your lab credentials if prompted:
 
