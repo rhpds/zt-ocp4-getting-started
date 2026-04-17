@@ -438,9 +438,12 @@ image::lab-03-11-console-scale-api-to-zero.png[Deployment detail page for datasp
 
 === Step 4.2: Watch ArgoCD respond
 
-Switch back to ArgoCD. Click *Refresh* on the datasphere application.
+Switch back to the *ArgoCD* tab. ArgoCD continuously compares the cluster state
+against Git -- with Self Heal enabled, it checks frequently and will detect the
+scaling change on its own. If the application is not already showing *OutOfSync*,
+click *Refresh* to trigger an immediate check.
 
-The status immediately shows *OutOfSync*: the cluster has 0 API replicas, but
+The status shows *OutOfSync*: the cluster has 0 API replicas, but
 `values.yaml` in Git says 1. ArgoCD knows what Git declared, and it knows what the
 cluster has -- and those don't match.
 
