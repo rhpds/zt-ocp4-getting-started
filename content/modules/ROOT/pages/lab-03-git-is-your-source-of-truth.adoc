@@ -429,7 +429,11 @@ deployment.apps/datasphere-api scaled
 ====
 . In the console, switch to the *{user}-gitops-lab* project.
 . Click *Workloads* → *Deployments*.
-. Click *datasphere-api*, then click the *down arrow* next to the pod count to scale it to 0.
+. Click *datasphere-api*.
++
+image::lab-03-11-console-scale-api-to-zero.png[Deployment detail page for datasphere-api showing the pod count with the down arrow to scale to 0]
++
+. Click the *down arrow* next to the pod count to scale it to 0.
 ====
 
 === Step 4.2: Watch ArgoCD respond
