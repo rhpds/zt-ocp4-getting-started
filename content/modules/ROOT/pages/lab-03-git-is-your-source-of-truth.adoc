@@ -202,6 +202,8 @@ You'll watch both change as the lab progresses.
 
 === Step 2.3: Verify the deployment
 
+Use either the CLI or the web console to confirm the pods are running:
+
 [%collapsible]
 .Using the Terminal (CLI)
 ====
@@ -363,12 +365,12 @@ Backbone arcs connect Nairobi to all other major hubs globally.
 
 You made 1 commit. ArgoCD handled the rest.
 
+If you want to confirm the change landed in the cluster, the CLI can show you
+exactly what ArgoCD wrote to the ConfigMap:
+
 [%collapsible]
 .Using the Terminal (CLI)
 ====
-You can verify the change landed in the cluster by inspecting the ConfigMap that
-ArgoCD updated:
-
 [source,role="execute",subs="attributes+"]
 ----
 oc get configmap datasphere-config -n {user}-gitops-lab -o jsonpath='{.data.extra_datacenters\.json}'
@@ -407,7 +409,8 @@ Let's see it.
 
 === Step 4.1: Make a direct change to the cluster
 
-Scale the API deployment down to 0 replicas directly, bypassing Git:
+Scale the API deployment down to 0 replicas directly, bypassing Git.
+Use either the CLI or the web console:
 
 [%collapsible]
 .Using the Terminal (CLI)
@@ -443,7 +446,7 @@ The status immediately shows *OutOfSync*: the cluster has 0 API replicas, but
 cluster has -- and those don't match.
 
 Because *Self Heal* is enabled, ArgoCD restores the API to 1 replica automatically
-within the next sync cycle. Watch the pod come back:
+within the next sync cycle. Optionally, watch from the CLI as the pod comes back:
 
 [%collapsible]
 .Using the Terminal (CLI)
