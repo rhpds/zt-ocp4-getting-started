@@ -249,7 +249,11 @@ You'll see all 3 DataSphere pods in *Running* status.
 
 === Step 2.4: Open the application
 
-Back in the *ArgoCD* tab, click on the *datasphere-ui* Route resource in the resource tree.
+Back in the *ArgoCD* tab, find the *datasphere-ui* Route resource in the resource tree
+and click it.
+
+image::lab-03-08-argocd-route-resource.png[ArgoCD resource tree with the datasphere-ui Route selected and the external link icon visible in the detail panel]
+
 A detail panel opens on the right. Click the *external link* icon next to the hostname
 to open DataSphere in a new browser tab.
 
