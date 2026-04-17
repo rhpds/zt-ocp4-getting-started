@@ -240,8 +240,11 @@ single `oc` command.
 In the OpenShift console, click the *Project* dropdown at the top of the page
 and select *{user}-gitops-lab*.
 
-In the left navigation, click *Workloads* → *Pods*. You'll see all 3 DataSphere
-pods in *Running* status.
+In the left navigation, click *Workloads* → *Pods*.
+
+image::lab-03-06-pods-running-gitops-lab.png[Pods list in the gitops-lab project showing all 3 DataSphere pods in Running status]
+
+You'll see all 3 DataSphere pods in *Running* status.
 ====
 
 === Step 2.4: Open the application
@@ -356,7 +359,7 @@ status move through *Syncing* and back to *Synced*. The ConfigMap change trigger
 a rolling restart of the API pod: ArgoCD handles the restart automatically as part
 of the sync.
 
-image::lab-03-06-argocd-out-of-sync.png[ArgoCD showing OutOfSync status after the Gitea commit]
+image::lab-03-07-argocd-out-of-sync.png[ArgoCD showing OutOfSync status after the Gitea commit]
 
 === Step 3.5: Verify on the DataSphere map
 
