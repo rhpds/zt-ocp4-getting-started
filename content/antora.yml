@@ -12,5 +12,6 @@ asciidoc:
     datasphere_ui_image: quay.io/rhpds/datasphere-ui:1.4.5
     datasphere_api_image: quay.io/rhpds/datasphere-api:1.4.5
     datasphere_helm_version: 1.5.1
-    # gitea_url is overridden at runtime from provision data — placeholder shown below
+    # gitea_url and argocd_url are overridden at runtime from provision data — placeholders shown below
     gitea_url: https://gitea.example.com
+    argocd_url: https://argocd.example.com

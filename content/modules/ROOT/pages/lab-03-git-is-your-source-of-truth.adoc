@@ -1,0 +1,498 @@
+= Lab 3: Git Is Your Source of Truth
+:source-highlighter: rouge
+:toc: macro
+:toclevels: 2
+
+In Labs 1 and 2, you deployed and operated DataSphere by running commands.
+Those commands work -- but they leave no record of what changed, when, or why.
+If a colleague updates something in the cluster, how do you know? If something
+breaks overnight, how do you roll it back?
+
+GitOps answers those questions by making a Git repository the source of truth
+for the cluster. You declare what you want in Git; a controller called ArgoCD
+watches that repository and keeps the cluster in sync. Every change is a commit.
+Every rollback is a revert. The audit trail is the commit history.
+
+In this lab, you'll deploy DataSphere using GitOps, make a live configuration
+change by editing a file in Gitea, and watch ArgoCD apply it to the cluster
+automatically -- no `oc apply`, no SSH, no deployment scripts.
+
+toc::[]
+
+== Learning objectives
+
+By the end of this lab, you'll be able to:
+
+* Explain what GitOps is and why Git is used as the source of truth for cluster state
+* Register an application in ArgoCD by pointing it at a Git repository
+* Make a configuration change through Git and watch ArgoCD apply it automatically
+* Explain what drift detection is and why it matters
+
+== Get connected
+
+=== ArgoCD
+
+Your environment includes a personal ArgoCD instance. Open it now using the URL
+from your connection details:
+
+[source,subs="attributes+"]
+----
+{argocd_url}
+----
+
+Click *Log in via OpenShift* and use your existing lab credentials:
+
+* *Username*: `{user}`
+* *Password*: `{password}`
+
+NOTE: ArgoCD uses your OpenShift login -- no separate account needed.
+The same credentials that work in the OpenShift console work here.
+
+=== OpenShift web console
+
+Click the *Console* tab on the right side of this lab interface.
+
+Log in with these credentials:
+
+* *Username*: `{user}`
+* *Password*: `{password}`
+* *Console URL*: {openshift_console_url}
+
+TIP: If the left navigation panel is not visible after logging in, click the *≡*
+icon in the top-left corner to expand it.
+
+=== Terminal (CLI)
+
+Click the *Terminal* tab on the right side of this lab interface.
+
+Log in to the cluster:
+
+[source,role="execute",subs="attributes+"]
+----
+oc login {openshift_api_url} --username {user} --password {password}
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Login successful.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+  * {user}-datasphere
+    {user}-gitops
+    {user}-gitops-lab
+    {user}-lab
+    {user}-lab-helm
+
+Using project "{user}-datasphere".
+----
+====
+
+=== Your lab projects
+
+3 projects are relevant to this lab:
+
+* `{user}-gitops`: your personal ArgoCD instance runs here
+* `{user}-gitops-lab`: empty workspace where ArgoCD will deploy DataSphere
+* `{user}-datasphere`: the pre-deployed DataSphere from Lab 1 -- still running, untouched
+
+The DataSphere you deployed manually in earlier labs lives in `{user}-datasphere`.
+In this lab, you'll deploy a second instance using GitOps, into `{user}-gitops-lab`.
+Both will run in parallel -- which makes it easy to compare.
+
+== Section 1: Your ArgoCD instance (3 minutes)
+
+After logging in, you'll see the ArgoCD dashboard with no applications listed.
+That's expected -- your ArgoCD instance starts empty. You'll register the first
+application in Section 2.
+
+ArgoCD is a *GitOps controller*: a process that runs inside the cluster, watches
+one or more Git repositories, and continuously reconciles the cluster state to match
+what's declared in Git. When you tell ArgoCD about a Git repository, it creates an
+*Application* -- a link between a Git source and a cluster destination. ArgoCD polls
+that source on a regular interval and applies any changes it finds.
+
+image::lab-03-01-argocd-empty.png[ArgoCD dashboard showing no applications]
+
+Take a moment to look at the top navigation:
+
+* *Applications*: the list of Git-managed deployments (empty for now)
+* *Settings*: where repositories, clusters, and projects are configured
+
+Your ArgoCD instance manages only your own namespaces -- it cannot see or affect
+other students' resources.
+
+== Section 2: Deploy DataSphere under GitOps management (10 minutes)
+
+Rather than running `oc` commands, you're going to point ArgoCD at your Gitea
+repository and let it do the deployment. The Helm chart you used in Lab 1's
+`helm install` step lives in your `datasphere-gitops` repository in Gitea -- ArgoCD
+just needs to know where to find it.
+
+=== Step 2.1: Create the Application
+
+In ArgoCD, click *+ New App* in the top left.
+
+A form panel opens on the right. Fill it in as follows:
+
+==== General
+
+[cols="1,2",options="header"]
+|===
+| Field | Value
+| *Application Name* | `datasphere`
+| *Project Name* | `lab`
+| *Sync Policy* | Click *Enable Auto-Sync*
+|===
+
+After enabling auto-sync, 2 checkboxes appear. Check *Self Heal*:
+
+* *Prune Resources*: leave unchecked (ArgoCD won't delete resources that are removed from Git)
+* *Self Heal*: check this (if someone changes the cluster directly, ArgoCD corrects it)
+
+You'll see what Self Heal does in Section 4.
+
+==== Source
+
+[cols="1,2",options="header"]
+|===
+| Field | Value
+| *Repository URL* | `{gitea_url}/{user}/datasphere-gitops`
+| *Revision* | `HEAD`
+| *Path* | `.`
+|===
+
+ArgoCD detects that the repository contains a Helm chart and shows a *Helm* badge next to the path.
+
+==== Destination
+
+[cols="1,2",options="header"]
+|===
+| Field | Value
+| *Cluster URL* | `\https://kubernetes.default.svc`
+| *Namespace* | `{user}-gitops-lab`
+|===
+
+Scroll down and click *Create*.
+
+image::lab-03-02-argocd-new-app-form.png[ArgoCD new application form filled in with datasphere details]
+
+=== Step 2.2: Watch it sync
+
+After creation, the Application tile appears on the dashboard. The status shows
+*Syncing* as ArgoCD fetches your repository, renders the Helm chart, and applies
+the resulting resources to `{user}-gitops-lab`.
+
+image::lab-03-03-argocd-syncing.png[ArgoCD application tile showing Syncing status]
+
+Within about 60 seconds, the status changes to *Synced* and *Healthy*:
+
+image::lab-03-04-argocd-synced.png[ArgoCD application tile showing Synced and Healthy status]
+
+Click the *datasphere* application tile to open its detail view. You'll see every
+resource ArgoCD deployed: 3 Deployments, 3 Services, 1 Route, 1 HPA, and the
+ConfigMaps that configure them. This is your full DataSphere stack, declared in
+Git and reconciled here automatically.
+
+image::lab-03-05-argocd-resource-tree.png[ArgoCD resource tree showing all DataSphere resources]
+
+=== Step 2.3: Verify the deployment
+
+[%collapsible]
+.Using the Terminal (CLI)
+====
+Switch to your gitops-lab project and check what's running:
+
+[source,role="execute",subs="attributes+"]
+----
+oc project {user}-gitops-lab
+----
+
+[source,role="execute"]
+----
+oc get pods
+----
+
+[%collapsible]
+.Expected output
+=====
+----
+NAME                                READY   STATUS    RESTARTS   AGE
+datasphere-api-7d464fc7c4-xxxxx     1/1     Running   0          2m
+datasphere-redis-69c8864976-xxxxx   1/1     Running   0          2m
+datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          2m
+----
+=====
+
+The same 3 pods you saw in `{user}-datasphere` -- deployed this time without a
+single `oc` command.
+====
+
+[%collapsible]
+.Using the Web Console
+====
+In the OpenShift console, click the *Project* dropdown at the top of the page
+and select *{user}-gitops-lab*.
+
+In the left navigation, click *Workloads* → *Pods*. You'll see all 3 DataSphere
+pods in *Running* status.
+====
+
+=== Step 2.4: Open the application
+
+In ArgoCD, click on the *datasphere-ui* Route resource in the resource tree.
+A detail panel opens on the right. Click the *external link* icon next to the hostname
+to open DataSphere in a new browser tab.
+
+Alternatively:
+
+[%collapsible]
+.Using the Terminal (CLI)
+====
+[source,role="execute",subs="attributes+"]
+----
+oc get route datasphere-ui -n {user}-gitops-lab
+----
+
+[%collapsible]
+.Expected output
+=====
+[subs="attributes+"]
+----
+NAME            HOST/PORT                                                              PATH   SERVICES        PORT   TERMINATION   WILDCARD
+datasphere-ui   datasphere-ui-{user}-gitops-lab.{openshift_cluster_ingress_domain}          datasphere-ui   8080   edge          None
+----
+=====
+
+Copy the URL from the `HOST/PORT` column and open it in your browser.
+====
+
+You'll see the DataSphere demo app running in `{user}-gitops-lab` -- the same app,
+a second independent deployment, this time managed entirely by ArgoCD.
+
+== Section 3: Change Git, change the cluster (7 minutes)
+
+The DataSphere network has major hubs across the Americas, Europe, and Asia Pacific.
+The Middle East and Africa region has only regional edge sites -- no major hub.
+You're going to add one.
+
+This is the core GitOps workflow: edit a file in Git, commit it, and the cluster
+updates itself. No `oc apply`. No Helm commands. Just a commit.
+
+=== Step 3.1: Open your Gitea repository
+
+Open Gitea from your connection details or navigate directly:
+
+[source,subs="attributes+"]
+----
+{gitea_url}/{user}/datasphere-gitops
+----
+
+Log in with your lab credentials if prompted:
+
+* *Username*: `{user}`
+* *Password*: `{password}`
+
+You'll see the `datasphere-gitops` repository: the Helm chart that ArgoCD used to
+deploy DataSphere. This is the same chart you ran `helm install` from in Lab 1 --
+now it's the Git source of truth for a live deployment.
+
+=== Step 3.2: Edit values.yaml
+
+Click `values.yaml` in the file list, then click the *pencil icon* (Edit this file)
+in the top-right corner of the file view.
+
+Find the `extraDatacenters: []` line in the `api:` section.
+
+Replace `extraDatacenters: []` with the following block.
+Keep the indentation exactly as shown -- YAML is whitespace-sensitive:
+
+[source,yaml,role="copypaste"]
+----
+  extraDatacenters:
+    - id: "rh-mea"
+      display_name: "MEA Hub"
+      city: "Nairobi"
+      region: "Middle East & Africa"
+      tier: "major"
+      lat: -1.3
+      lng: 36.8
+      base_capacity_pct: 45
+      base_workload_count: 892
+----
+
+NOTE: The `extraDatacenters` key is indented under `api:`. Make sure your block
+matches that indent level, or the Helm chart will fail to render.
+
+=== Step 3.3: Commit the change
+
+Scroll down to the *Commit Changes* section. Enter a commit message:
+
+[source,role="copypaste"]
+----
+Add MEA Hub (Nairobi) -- bring Middle East and Africa region online
+----
+
+Leave all other settings at their defaults and click *Commit Changes*.
+
+=== Step 3.4: Watch ArgoCD detect and apply the change
+
+Switch back to ArgoCD. ArgoCD polls your repository every 3 minutes. To trigger
+an immediate check, click *Refresh* on the datasphere Application tile.
+
+Within seconds of the refresh, the status changes to *OutOfSync* -- ArgoCD has
+detected that the Git state no longer matches the cluster state.
+
+With auto-sync enabled, ArgoCD immediately begins reconciling. You'll see the
+status move through *Syncing* and back to *Synced*. The ConfigMap change triggers
+a rolling restart of the API pod: ArgoCD handles the restart automatically as part
+of the sync.
+
+image::lab-03-06-argocd-out-of-sync.png[ArgoCD showing OutOfSync status after the Gitea commit]
+
+=== Step 3.5: Verify on the DataSphere map
+
+Reload the DataSphere app you opened in Step 2.4. A new hub dot appears in East Africa.
+Backbone arcs connect Nairobi to all other major hubs globally.
+
+You made 1 commit. ArgoCD handled the rest.
+
+[%collapsible]
+.Using the Terminal (CLI)
+====
+You can verify the change landed in the cluster by inspecting the ConfigMap that
+ArgoCD updated:
+
+[source,role="execute",subs="attributes+"]
+----
+oc get configmap datasphere-config -n {user}-gitops-lab -o jsonpath='{.data.extra_datacenters\.json}'
+----
+
+[%collapsible]
+.Expected output
+=====
+----
+[{"id": "rh-mea", "display_name": "MEA Hub", "city": "Nairobi", ...}]
+----
+=====
+====
+
+=== What just happened
+
+When you committed `values.yaml`, Git recorded the change with your username,
+a timestamp, and the commit message you wrote. ArgoCD detected the new commit,
+re-rendered the Helm chart with the updated values, and applied only the resources
+that changed -- in this case, the `datasphere-config` ConfigMap. The API pod
+restarted to pick up the new ConfigMap contents.
+
+Every step is traceable. If you need to roll back, you revert the commit -- ArgoCD
+applies the previous state. No manual intervention, no "I remember running some
+command last week."
+
+== Section 4: What happens when someone bypasses Git (5 minutes)
+
+GitOps isn't just about deploying through Git -- it's about *only* deploying
+through Git. The reason Self Heal exists is that sometimes people make changes
+directly in the cluster: a quick `oc scale` to test something, a manual ConfigMap
+edit under pressure. With Self Heal enabled, ArgoCD detects and corrects those
+changes automatically.
+
+Let's see it.
+
+=== Step 4.1: Make a direct change to the cluster
+
+Scale the API deployment down to 0 replicas directly, bypassing Git:
+
+[%collapsible]
+.Using the Terminal (CLI)
+====
+[source,role="execute",subs="attributes+"]
+----
+oc scale deployment datasphere-api --replicas=0 -n {user}-gitops-lab
+----
+
+[%collapsible]
+.Expected output
+=====
+----
+deployment.apps/datasphere-api scaled
+----
+=====
+====
+
+[%collapsible]
+.Using the Web Console
+====
+. In the console, switch to the *{user}-gitops-lab* project.
+. Click *Workloads* → *Deployments*.
+. Click *datasphere-api*, then click the *down arrow* next to the pod count to scale it to 0.
+====
+
+=== Step 4.2: Watch ArgoCD respond
+
+Switch back to ArgoCD. Click *Refresh* on the datasphere application.
+
+The status immediately shows *OutOfSync*: the cluster has 0 API replicas, but
+`values.yaml` in Git says 1. ArgoCD knows what Git declared, and it knows what the
+cluster has -- and those don't match.
+
+Because *Self Heal* is enabled, ArgoCD restores the API to 1 replica automatically
+within the next sync cycle. Watch the pod come back:
+
+[%collapsible]
+.Using the Terminal (CLI)
+====
+[source,role="execute",subs="attributes+"]
+----
+oc get pods -n {user}-gitops-lab
+----
+
+[%collapsible]
+.Expected output
+=====
+----
+NAME                                READY   STATUS    RESTARTS   AGE
+datasphere-api-7d464fc7c4-xxxxx     1/1     Running   0          15s
+datasphere-redis-69c8864976-xxxxx   1/1     Running   0          15m
+datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          15m
+----
+=====
+====
+
+The API pod is back. You didn't touch it -- ArgoCD matched the cluster to Git.
+
+If you want to scale the API to 0 permanently, there's one way to do it: commit
+a change to `values.yaml` that sets `api.replicas: 0`. Then Git reflects your
+intent, and the cluster follows.
+
+== What you learned
+
+* *GitOps* means Git is the system of record for what runs in the cluster.
+  You declare the desired state in a repository; a controller reconciles the cluster to match.
+* *ArgoCD* is that controller. It watches a Git repository and applies changes automatically.
+* *Drift detection* catches changes made outside of Git and corrects them -- either
+  automatically (Self Heal) or by alerting you and waiting for a manual sync.
+* Every configuration change is a Git commit: auditable, reversible, and reviewable.
+
+The DataSphere app you deployed in Labs 1 and 2 used `oc` commands and Helm
+from your terminal. The version you deployed in this lab came entirely from a
+Gitea repository. Both work -- but only the second one has a history.
+
+== Summary
+
+[cols="1,2",options="header"]
+|===
+| What you did | How it worked
+
+| Registered DataSphere in ArgoCD
+| Pointed ArgoCD at your `datasphere-gitops` Gitea repository. ArgoCD rendered the Helm chart and deployed it.
+
+| Added a new datacenter by editing a file
+| Committed a change to `values.yaml` in Gitea. ArgoCD detected it, re-rendered the chart, and applied only what changed.
+
+| Scaled to 0 directly in the cluster
+| ArgoCD detected the mismatch with Git and restored the declared state automatically.
+|===

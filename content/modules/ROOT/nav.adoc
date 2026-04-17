@@ -1,5 +1,4 @@
 * xref:index.adoc[Home]
-* xref:lab-01-deploy-the-app.adoc[Lab 1: Deploy the App (CLI)]
-* xref:lab-02-apps-never-down.adoc[Lab 2: Apps That Never Go Down (CLI)]
-* xref:lab-02-apps-never-down-collapsible.adoc[Lab 2: Apps That Never Go Down (Collapsible)]
-* xref:lab-04-gitops.adoc[Module 4: Git Is Your Source of Truth (GitOps)]
+* xref:lab-01-deploy-the-app-collapsible.adoc[Lab 1: Deploy the App]
+* xref:lab-02-apps-never-down-collapsible.adoc[Lab 2: Apps That Never Go Down]
+* xref:lab-03-git-is-your-source-of-truth.adoc[Lab 3: Git Is Your Source of Truth]
