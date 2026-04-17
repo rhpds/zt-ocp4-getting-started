@@ -1,0 +1,118 @@
+// Auto-generated console guide from playbook. Reviewed and cleaned 2026-04-16.
+// Source: lab-01-deploy-the-app.adoc
+
+=== Log in to the OpenShift web console and view available projects
+
+. Click the *Console* tab on the right side of this lab interface.
+. Log in with the credentials shown on this page (*Username* and *Password*).
++
+TIP: If you see a *Welcome* tour popup, click *Skip tour*.
+. After logging in, click the perspective switcher in the top-left corner — it may default to *Developer*. Select *Core platform*.
++
+image::console-guide/01-core-platform-projects.png[Core Platform perspective showing all student projects]
++
+You will see 5 Projects. Continue to the next section.
+
+=== View all pods running in the datasphere project
+
+. In the Project selector at the top, switch to *`{user}-datasphere`*.
+. In the left navigation, expand *Workloads* and click *Pods*.
++
+image::console-guide/lab-01-deploy-the-app/02-pods-list-all-running.png[Pods list showing all 3 DataSphere pods running]
++
+You will see 3 pods: `datasphere-api`, `datasphere-redis`, and `datasphere-ui`. All show *Running* status with *1/1* Ready and *0* Restarts.
+
+=== Inspect the datasphere-ui pod details including labels and status
+
+. Click the name of the `datasphere-ui-*` pod to open its detail page.
++
+image::console-guide/lab-01-deploy-the-app/03-ui-pod-details.png[Pod detail page for datasphere-ui showing Running status, labels (app=datasphere, component=ui), namespace, and pod IP]
++
+Notice the *Labels* section: `app=datasphere` and `component=ui`. These labels are how the Service finds this pod. You can also see the *Status* (Running), *Namespace*, *Pod IP*, and other details.
++
+Click the *Logs* tab to see the application logs (equivalent to `oc logs`).
+
+=== Inspect the datasphere-ui Service details including selector and endpoints
+
+. In the left navigation, expand *Networking* and click *Services*.
++
+image::console-guide/lab-01-deploy-the-app/04-services-list.png[Services list showing datasphere-api, datasphere-ui, and redis with their labels, pod selectors, and cluster IPs]
++
+You will see 3 Services. Notice the *Pod selector* column: each Service uses labels to find the right pods.
+. Click *datasphere-ui* to open the Service detail page.
++
+image::console-guide/lab-01-deploy-the-app/05-service-ui-details.png[Service detail page for datasphere-ui showing pod selector, cluster IP, hostname, and port mapping]
++
+Notice the *Pod selector* field: `app=datasphere, component=ui`. This is how the Service finds the right pods. The *Hostname* shows the internal DNS name other applications use to reach this Service by name — no IP addresses required.
+
+=== View the Route details and understand why only the UI has a Route
+
+. In the left navigation, click *Routes*.
++
+image::console-guide/lab-01-deploy-the-app/06-routes-list.png[Routes list showing only the datasphere-ui route with Accepted status and its public URL]
++
+Notice there is only *one* Route: `datasphere-ui`. The API and Redis have Services for internal communication, but only the frontend needs a Route for external access.
+. Click *datasphere-ui* to open the Route detail page.
++
+image::console-guide/lab-01-deploy-the-app/07-route-ui-details.png[Route detail page for datasphere-ui showing public URL, host, status Accepted, service, and target port 8080]
++
+The *Location* field is the public URL you opened in your browser. OpenShift generated the hostname automatically and handles the TLS certificate — there is nothing to configure.
+
+=== Deploy datasphere-ui from a container image using the web console
+
+. Switch to the *Developer* perspective using the perspective switcher in the top-left.
+. Confirm the *`{user}-lab`* project is selected in the Project selector.
+. In the left navigation, click *+Add*, then click *Container images*.
++
+image::console-guide/lab-01-deploy-the-app/09-deploy-image-form.png[Deploy Image form with datasphere-ui image name entered from external registry]
++
+. In the *Image name from external registry* field, enter: `{datasphere_ui_image}`
+. Set *Name* to `datasphere-ui`.
+. Scroll down to *Advanced options*. Confirm *Target port* is *8080* and check the *Create a route* checkbox — this tells OpenShift to create a public HTTPS Route automatically.
++
+image::console-guide/lab-01-deploy-the-app/11-deploy-image-create-route-checked.png[Deploy Image form Advanced Options with Create a route checkbox checked and target port 8080]
++
+. Click *Create*. OpenShift creates a Deployment, a Service, and an edge-terminated Route in one step — the console equivalent of `oc new-app` followed by `oc create route edge`.
+
+=== Build and deploy the API from Git source using Source-to-Image
+
+. In the left navigation, click *+Add*, then click *Import from Git*.
++
+image::console-guide/lab-01-deploy-the-app/10-import-from-git-form.png[Import from Git form with Gitea datasphere-api repository URL and advanced Git options showing Source Secret field for authentication]
++
+. In the *Git Repo URL* field, enter your Gitea repository URL: `{gitea_url}/{user}/datasphere-api`
++
+NOTE: If you see a warning about the repository being unreachable, click *Show advanced Git options* and select a *Source Secret* with your Gitea credentials. The CLI command handles private repositories automatically.
++
+. OpenShift detects the Python language and selects the appropriate builder image automatically.
+. Set *Name* to `datasphere-api`, then click *Create*.
+
+=== Monitor the S2I build progress and confirm both components are running
+
+After clicking *Create*, OpenShift schedules an S2I build. To watch it:
+
+. Click *Builds* in the left navigation.
+. Click the *datasphere-api* BuildConfig that appears.
+. Select the *Builds* tab — a new Build entry shows the current run.
+. Click the build name and select *Logs* to see the live build output: cloning the repository, installing Python dependencies, building and pushing the image.
+
+When the build status shows *Complete*, the Deployment starts automatically. Navigate to *Topology* to confirm both `datasphere-ui` and `datasphere-api` appear with solid blue rings.
+
+image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing datasphere-ui and datasphere-api both deployed with the external Route icon on datasphere-ui]
+
+The external link icon on `datasphere-ui` is the Route. Click it to open the app — the map is now populated with live data from the API you just deployed.
+
+=== Verify the Helm release in the console after running helm install from the terminal
+
+. Switch to the *`{user}-lab-helm`* Project and click *Helm* in the left navigation.
++
+image::console-guide/lab-01-deploy-the-app/13-helm-releases-empty.png[Helm Releases page showing No Helm Releases found — starting state before helm install]
++
+NOTE: The DataSphere chart is served from your Gitea package registry as a direct chart URL. The console's Helm catalog only shows pre-registered chart repositories — use the terminal to run `helm install` as shown in the CLI steps.
++
+. After the `helm install` command completes in the terminal, return to this *Helm* page. A *datasphere* release appears showing *Status: deployed* and *Revision: 1*. Each `helm upgrade` increments the revision — Helm tracks the full history here.
+. Switch to *Topology* to see all three components come up together from a single install.
++
+image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing all three DataSphere components — datasphere-ui, datasphere-api, and datasphere-redis — deployed by the Helm chart]
++
+The external link icon on `datasphere-ui` is the Route created by the chart. Click it to open the application.
