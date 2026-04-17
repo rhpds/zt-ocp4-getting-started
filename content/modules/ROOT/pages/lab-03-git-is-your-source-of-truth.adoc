@@ -336,8 +336,10 @@ Leave all other settings at their defaults and click *Commit Changes*.
 
 === Step 3.4: Watch ArgoCD detect and apply the change
 
-Switch back to ArgoCD. ArgoCD polls your repository every 3 minutes. To trigger
-an immediate check, click *Refresh* on the datasphere Application tile.
+Switch back to the *ArgoCD* tab. ArgoCD polls your repository every 3 minutes --
+it may already be detecting the change. If the application is not already showing
+*OutOfSync* or *Syncing*, click *Refresh* on the datasphere Application tile to
+trigger an immediate check.
 
 Within seconds of the refresh, the status changes to *OutOfSync* -- ArgoCD has
 detected that the Git state no longer matches the cluster state.
