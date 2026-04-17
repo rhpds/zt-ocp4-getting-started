@@ -114,13 +114,8 @@ that source on a regular interval and applies any changes it finds.
 
 image::lab-03-01-argocd-empty.png[ArgoCD dashboard showing no applications]
 
-Take a moment to look at the top navigation:
-
-* *Applications*: the list of Git-managed deployments (empty for now)
-* *Settings*: where repositories, clusters, and projects are configured
-
 Your ArgoCD instance manages only your own namespaces -- it cannot see or affect
-other students' resources.
+other students' resources. Let's give it something to manage.
 
 == Section 2: Deploy DataSphere under GitOps management (10 minutes)
 
@@ -195,6 +190,15 @@ ConfigMaps that configure them. This is your full DataSphere stack, declared in
 Git and reconciled here automatically.
 
 image::lab-03-05-argocd-resource-tree.png[ArgoCD resource tree showing all DataSphere resources]
+
+While you're here, notice the top navigation:
+
+* *Applications*: the list of Git-managed deployments -- the `datasphere` tile you just created
+* *Settings*: where repositories, clusters, and projects are configured
+
+The *SYNC STATUS* and *HEALTH STATUS* badges on the tile tell you at a glance
+whether Git and the cluster agree, and whether the deployed resources are functioning.
+You'll watch both change as the lab progresses.
 
 === Step 2.3: Verify the deployment
 
