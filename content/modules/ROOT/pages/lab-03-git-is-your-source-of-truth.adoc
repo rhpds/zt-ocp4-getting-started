@@ -80,7 +80,6 @@ You have access to the following projects and can switch between them with 'oc p
 
   * {user}-datasphere
     {user}-gitops
-    {user}-gitops-lab
     {user}-lab
     {user}-lab-helm
 
@@ -90,15 +89,14 @@ Using project "{user}-datasphere".
 
 === Your lab projects
 
-3 projects are relevant to this lab:
+2 projects are relevant to this lab:
 
-* `{user}-gitops`: your personal ArgoCD instance runs here
-* `{user}-gitops-lab`: empty workspace where ArgoCD will deploy DataSphere
+* `{user}-gitops`: your personal ArgoCD instance runs here -- and where ArgoCD will deploy DataSphere
 * `{user}-datasphere`: the pre-deployed DataSphere from Lab 1 -- still running, untouched
 
 The DataSphere you deployed manually in earlier labs lives in `{user}-datasphere`.
-In this lab, you'll deploy a second instance using GitOps, into `{user}-gitops-lab`.
-Both will run in parallel -- which makes it easy to compare.
+In this lab, you'll deploy a second instance using GitOps, into `{user}-gitops` alongside
+the ArgoCD controllers. Both deployments run in parallel -- which makes it easy to compare.
 
 == Section 1: Your ArgoCD instance (3 minutes)
 
@@ -165,7 +163,7 @@ ArgoCD detects that the repository contains a Helm chart and shows a *Helm* badg
 |===
 | Field | Value
 | *Cluster URL* | `\https://kubernetes.default.svc`
-| *Namespace* | `{user}-gitops-lab`
+| *Namespace* | `{user}-gitops`
 |===
 
 Scroll down and click *Create*.
@@ -176,7 +174,7 @@ image::lab-03-02-argocd-new-app-form.png[ArgoCD new application form filled in w
 
 After creation, the Application tile appears on the dashboard. The status shows
 *Syncing* as ArgoCD fetches your repository, renders the Helm chart, and applies
-the resulting resources to `{user}-gitops-lab`.
+the resulting resources to `{user}-gitops`.
 
 image::lab-03-03-argocd-syncing.png[ArgoCD application tile showing Syncing status]
 
@@ -207,11 +205,11 @@ Use either the CLI or the web console to confirm the pods are running:
 [%collapsible]
 .Using the Terminal (CLI)
 ====
-Switch to your gitops-lab project and check what's running:
+Switch to your gitops project and check what's running:
 
 [source,role="execute",subs="attributes+"]
 ----
-oc project {user}-gitops-lab
+oc project {user}-gitops
 ----
 
 [source,role="execute"]
@@ -238,11 +236,11 @@ single `oc` command.
 .Using the Web Console
 ====
 In the OpenShift console, click the *Project* dropdown at the top of the page
-and select *{user}-gitops-lab*.
+and select *{user}-gitops*.
 
 In the left navigation, click *Workloads* → *Pods*.
 
-image::lab-03-06-pods-running-gitops-lab.png[Pods list in the gitops-lab project showing all 3 DataSphere pods in Running status]
+image::lab-03-06-pods-running-gitops-lab.png[Pods list in the gitops project showing all 3 DataSphere pods in Running status]
 
 You'll see all 3 DataSphere pods in *Running* status.
 ====
@@ -257,7 +255,7 @@ image::lab-03-08-argocd-route-resource.png[ArgoCD resource tree with the datasph
 A detail panel opens on the right. Click the *external link* icon next to the hostname
 to open DataSphere in a new browser tab.
 
-You'll see the DataSphere demo app running in `{user}-gitops-lab` -- the same app,
+You'll see the DataSphere demo app running in `{user}-gitops` -- the same app,
 a second independent deployment, this time managed entirely by ArgoCD.
 
 == Section 3: Change Git, change the cluster (7 minutes)
@@ -290,7 +288,7 @@ deploy DataSphere. This is the same chart source you used in Lab 1 -- but with o
 important difference. In Lab 1, `helm install` pulled a packaged snapshot from the
 Gitea package registry: a frozen `.tgz` file. That release is still running in
 `{user}-lab`, unchanged. ArgoCD, by contrast, watches this Git repository directly.
-Edits you make here are picked up on the next sync and applied to `{user}-gitops-lab` --
+Edits you make here are picked up on the next sync and applied to `{user}-gitops` --
 the Lab 1 deployment is unaffected unless you repackage and republish the chart.
 
 === Step 3.2: Edit values.yaml
@@ -355,7 +353,7 @@ image::lab-03-10-argocd-synced-after-change.png[ArgoCD showing Synced and Health
 
 === Step 3.5: Verify on the DataSphere map
 
-Reload the link:https://datasphere-ui-{user}-gitops-lab.{openshift_cluster_ingress_domain}/[DataSphere app, window=_blank] you opened in Step 2.4. A new hub dot appears in East Africa.
+Reload the link:https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/[DataSphere app, window=_blank] you opened in Step 2.4. A new hub dot appears in East Africa.
 Backbone arcs connect Nairobi to all other major hubs globally.
 
 You made 1 commit. ArgoCD handled the rest.
@@ -368,7 +366,7 @@ exactly what ArgoCD wrote to the ConfigMap:
 ====
 [source,role="execute",subs="attributes+"]
 ----
-oc get configmap datasphere-config -n {user}-gitops-lab -o jsonpath='{.data.extra_datacenters\.json}'
+oc get configmap datasphere-config -n {user}-gitops -o jsonpath='{.data.extra_datacenters\.json}'
 ----
 
 [%collapsible]
@@ -412,7 +410,7 @@ Use either the CLI or the web console:
 ====
 [source,role="execute",subs="attributes+"]
 ----
-oc scale deployment datasphere-api --replicas=0 -n {user}-gitops-lab
+oc scale deployment datasphere-api --replicas=0 -n {user}-gitops
 ----
 
 [%collapsible]
@@ -427,7 +425,7 @@ deployment.apps/datasphere-api scaled
 [%collapsible]
 .Using the Web Console
 ====
-. In the console, switch to the *{user}-gitops-lab* project.
+. In the console, switch to the *{user}-gitops* project.
 . Click *Workloads* → *Deployments*.
 . Click *datasphere-api*.
 +
@@ -456,7 +454,7 @@ or the web console:
 ====
 [source,role="execute",subs="attributes+"]
 ----
-oc get pods -n {user}-gitops-lab
+oc get pods -n {user}-gitops
 ----
 
 [%collapsible]
@@ -474,7 +472,7 @@ datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          15m
 [%collapsible]
 .Using the Web Console
 ====
-In the console, switch to the *{user}-gitops-lab* project and click
+In the console, switch to the *{user}-gitops* project and click
 *Workloads* → *Pods*. Watch the `datasphere-api` pod return to *Running* status.
 
 image::lab-03-12-console-api-pod-restored.png[Pods list showing datasphere-api back in Running status after ArgoCD Self Heal restored it]
