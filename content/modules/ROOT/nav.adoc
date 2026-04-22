@@ -13,5 +13,5 @@ endif::[]
 ifeval::["{module}" == "3"]
 .Module 3 of 3
 * xref:index.adoc[Home]
-* xref:lab-03-git-is-your-source-of-truth.adoc[Module 3: Git Is Your Source of Truth]
+* xref:lab-03-git-is-your-source-of-truth-collapsible.adoc[Module 3: Git Is Your Source of Truth]
 endif::[]
