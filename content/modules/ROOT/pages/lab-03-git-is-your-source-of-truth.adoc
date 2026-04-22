@@ -1,9 +1,9 @@
-= Lab 3: Git Is Your Source of Truth
+= Module 3: Git Is Your Source of Truth
 :source-highlighter: rouge
 :toc: macro
 :toclevels: 2
 
-In Labs 1 and 2, you deployed and operated DataSphere by running commands.
+In Modules 1 and 2, you deployed and operated DataSphere by running commands.
 Those commands work -- but they leave no record of what changed, when, or why.
 If a colleague updates something in the cluster, how do you know? If something
 breaks overnight, how do you roll it back?
@@ -92,9 +92,9 @@ Using project "{user}-datasphere".
 2 projects are relevant to this lab:
 
 * `{user}-gitops`: your personal ArgoCD instance runs here -- and where ArgoCD will deploy DataSphere
-* `{user}-datasphere`: the pre-deployed DataSphere from Lab 1 -- still running, untouched
+* `{user}-datasphere`: the pre-deployed DataSphere from Module 1 -- still running, untouched
 
-The DataSphere you deployed manually in earlier labs lives in `{user}-datasphere`.
+The DataSphere you deployed manually in earlier modules lives in `{user}-datasphere`.
 In this lab, you'll deploy a second instance using GitOps, into `{user}-gitops` alongside
 the ArgoCD controllers. Both deployments run in parallel -- which makes it easy to compare.
 
@@ -118,7 +118,7 @@ other students' resources. Let's give it something to manage.
 == Section 2: Deploy DataSphere under GitOps management (10 minutes)
 
 Rather than running `oc` commands, you're going to point ArgoCD at your Gitea
-repository and let it do the deployment. The Helm chart you used in Lab 1's
+repository and let it do the deployment. The Helm chart you used in Module 1's
 `helm install` step lives in your `datasphere-gitops` repository in Gitea -- ArgoCD
 just needs to know where to find it.
 
@@ -284,12 +284,12 @@ Log in with your lab credentials if prompted:
 * *Password*: `{password}`
 
 You'll see the `datasphere-gitops` repository: the Helm chart that ArgoCD used to
-deploy DataSphere. This is the same chart source you used in Lab 1 -- but with one
-important difference. In Lab 1, `helm install` pulled a packaged snapshot from the
+deploy DataSphere. This is the same chart source you used in Module 1 -- but with one
+important difference. In Module 1, `helm install` pulled a packaged snapshot from the
 Gitea package registry: a frozen `.tgz` file. That release is still running in
 `{user}-lab`, unchanged. ArgoCD, by contrast, watches this Git repository directly.
 Edits you make here are picked up on the next sync and applied to `{user}-gitops` --
-the Lab 1 deployment is unaffected unless you repackage and republish the chart.
+the Module 1 deployment is unaffected unless you repackage and republish the chart.
 
 === Step 3.2: Edit values.yaml
 
@@ -493,7 +493,7 @@ intent, and the cluster follows.
   automatically (Self Heal) or by alerting you and waiting for a manual sync.
 * Every configuration change is a Git commit: auditable, reversible, and reviewable.
 
-The DataSphere app you deployed in Labs 1 and 2 used `oc` commands and Helm
+The DataSphere app you deployed in Modules 1 and 2 used `oc` commands and Helm
 from your terminal. The version you deployed in this lab came entirely from a
 Gitea repository. Both work -- but only the second one has a history.
 

@@ -1,17 +1,42 @@
 = OpenShift Getting Started
 
-Welcome to the *OpenShift Getting Started* lab series.
+ifeval::["{module}" == "1"]
+== Module 1 of 3: Deploy the App
 
-These labs are designed for developers, platform engineers, and DevOps engineers who are new to OpenShift.
-Each lab is hands-on and self-contained: you'll work directly on a live OpenShift cluster.
+Welcome to the first module in the *OpenShift Getting Started* series.
 
-== Labs in this series
+This module is designed for developers, platform engineers, and DevOps engineers who are new to OpenShift.
+The module is hands-on and self-contained: you'll work directly on a live OpenShift cluster.
 
-* xref:lab-01-deploy-the-app.adoc[Lab 1: Deploy the App] +
-  Deploy an application 3 different ways: from a container image, via Source-to-Image, and with a Helm chart. Learn the core building blocks: Pods, Services, and Routes.
+=== What You'll Learn
 
-* xref:lab-02-apps-never-down.adoc[Lab 2: Apps That Never Go Down] +
-  Configure health probes, scale to multiple replicas, and set up autoscaling to handle real traffic.
+Deploy an application 3 different ways: from a container image, via Source-to-Image, and with a Helm chart. Learn the core building blocks: Pods, Services, and Routes.
+endif::[]
 
-* xref:lab-04-gitops.adoc[Lab 3: Git Is Your Source of Truth] +
-  Register your application under GitOps management and watch ArgoCD keep the cluster in sync with Git.
+ifeval::["{module}" == "2"]
+== Module 2 of 3: Apps That Never Go Down
+
+Welcome to the second module in the *OpenShift Getting Started* series.
+
+**Prerequisites:** This module assumes you have completed Module 1 or are familiar with basic OpenShift concepts (Pods, Services, Routes, and Deployments).
+
+=== What You'll Learn
+
+Configure health probes, scale to multiple replicas, and set up autoscaling to handle real traffic. Understand how OpenShift keeps your applications running and resilient.
+endif::[]
+
+ifeval::["{module}" == "3"]
+== Module 3 of 3: Git Is Your Source of Truth
+
+Welcome to the third module in the *OpenShift Getting Started* series.
+
+**Prerequisites:** This module assumes you have completed Modules 1 and 2 or are familiar with basic OpenShift concepts and application deployment.
+
+=== What You'll Learn
+
+Register your application under GitOps management and watch ArgoCD keep the cluster in sync with Git. Learn how to use Git as the source of truth for your application deployments.
+endif::[]
+
+== Get Started
+
+Click the module link in the left sidebar to begin.

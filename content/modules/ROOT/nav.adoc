@@ -1,4 +1,17 @@
+ifeval::["{module}" == "1"]
+.Module 1 of 3
 * xref:index.adoc[Home]
-* xref:lab-01-deploy-the-app-collapsible.adoc[Lab 1: Deploy the App]
-* xref:lab-02-apps-never-down-collapsible.adoc[Lab 2: Apps That Never Go Down]
-* xref:lab-03-git-is-your-source-of-truth.adoc[Lab 3: Git Is Your Source of Truth]
+* xref:lab-01-deploy-the-app-collapsible.adoc[Module 1: Deploy the App]
+endif::[]
+
+ifeval::["{module}" == "2"]
+.Module 2 of 3
+* xref:index.adoc[Home]
+* xref:lab-02-apps-never-down-collapsible.adoc[Module 2: Apps That Never Go Down]
+endif::[]
+
+ifeval::["{module}" == "3"]
+.Module 3 of 3
+* xref:index.adoc[Home]
+* xref:lab-03-git-is-your-source-of-truth.adoc[Module 3: Git Is Your Source of Truth]
+endif::[]

@@ -1,9 +1,9 @@
-= Module 3: Apps That Never Go Down
+= Module 2: Apps That Never Go Down
 :source-highlighter: rouge
 :toc: macro
 :toclevels: 2
 
-Your DataSphere demo app (the datacenter visualization you deployed in Labs 1 and 2) is
+Your DataSphere demo app (the datacenter visualization you deployed in Modules 1 and 2) is
 running. Users are happy. But what happens when a pod crashes? What happens when traffic
 spikes at 3am? In this module, you'll find out by breaking things on purpose, then
 watching OpenShift fix them automatically, using either the CLI or the web console.

@@ -1,4 +1,4 @@
-= Lab 1: Deploy the App -- 3 Ways to Get Code Running
+= Module 1: Deploy the App -- 3 Ways to Get Code Running
 :source-highlighter: rouge
 :toc: macro
 :toclevels: 2
@@ -895,5 +895,5 @@ behind every OpenShift application.
 
 *Next steps:*
 
-DataSphere is running. Lab 2 covers what happens when things break -- and how OpenShift
+DataSphere is running. Module 2 covers what happens when things break -- and how OpenShift
 keeps your application available automatically with scaling and self-healing.
