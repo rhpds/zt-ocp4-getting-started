@@ -1,4 +1,4 @@
-= Module 3: Apps That Never Go Down
+= Lab 2: Apps That Never Go Down
 :source-highlighter: rouge
 :toc: macro
 :toclevels: 2

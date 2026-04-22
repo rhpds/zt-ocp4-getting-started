@@ -1,24 +1,38 @@
 = OpenShift Getting Started
 
-Welcome to the *OpenShift Getting Started* lab.
+ifeval::["{lab_number}" == "1"]
+== Lab 1 of 3: Deploy the App
+
+Welcome to the first lab in the *OpenShift Getting Started* series.
 
 This lab is designed for developers, platform engineers, and DevOps engineers who are new to OpenShift.
 The lab is hands-on and self-contained: you'll work directly on a live OpenShift cluster.
 
-ifeval::["{lab_number}" == "1"]
-== What You'll Learn
+=== What You'll Learn
 
 Deploy an application 3 different ways: from a container image, via Source-to-Image, and with a Helm chart. Learn the core building blocks: Pods, Services, and Routes.
 endif::[]
 
 ifeval::["{lab_number}" == "2"]
-== What You'll Learn
+== Lab 2 of 3: Apps That Never Go Down
+
+Welcome to the second lab in the *OpenShift Getting Started* series.
+
+**Prerequisites:** This lab assumes you have completed Lab 1 or are familiar with basic OpenShift concepts (Pods, Services, Routes, and Deployments).
+
+=== What You'll Learn
 
 Configure health probes, scale to multiple replicas, and set up autoscaling to handle real traffic. Understand how OpenShift keeps your applications running and resilient.
 endif::[]
 
 ifeval::["{lab_number}" == "3"]
-== What You'll Learn
+== Lab 3 of 3: Git Is Your Source of Truth
+
+Welcome to the third lab in the *OpenShift Getting Started* series.
+
+**Prerequisites:** This lab assumes you have completed Labs 1 and 2 or are familiar with basic OpenShift concepts and application deployment.
+
+=== What You'll Learn
 
 Register your application under GitOps management and watch ArgoCD keep the cluster in sync with Git. Learn how to use Git as the source of truth for your application deployments.
 endif::[]
