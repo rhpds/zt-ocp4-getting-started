@@ -74,7 +74,6 @@ You have access to the following projects and can switch between them with 'oc p
 
   * {user}-datasphere
     {user}-gitops
-    {user}-gitops-lab
     {user}-lab
     {user}-lab-helm
 
@@ -90,7 +89,7 @@ Several projects have been provisioned for you. The ones you'll use in this lab:
 * `{user}-datasphere`: contains the pre-deployed DataSphere demo app -- explore it in Section 1
 * `{user}-lab`: your clean workspace -- you'll build here in Section 2 and Section 3
 
-You'll also see `{user}-gitops`, `{user}-gitops-lab`, and `{user}-lab-helm` -- those are used in later labs.
+You'll also see `{user}-gitops` and `{user}-lab-helm` -- those are used in later labs.
 
 NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes your resources and controls access.
 
@@ -180,6 +179,11 @@ image::console-guide/lab-01-deploy-the-app/02-pods-list-all-running.png[Pods lis
 You'll see 3 pods: `datasphere-api`, `datasphere-redis`, and `datasphere-ui` -- all *Running*
 with *1/1* Ready.
 ====
+
+NOTE: You may see more than one `datasphere-api` pod if the Horizontal Pod Autoscaler (HPA)
+has already scaled the API up under simulated load -- that's expected. You may also see a
+`WARNING: apps.openshift.io/v1 DeploymentConfig is deprecated` line in the output; this comes
+from OpenShift's own internal components, not from DataSphere, and can be ignored.
 
 Notice: three Pods, three Services, three Deployments -- but only one Route. The API and Redis
 have Services for internal communication, but only the frontend has a Route for external access.
@@ -558,10 +562,8 @@ This is *Source-to-Image* (S2I).
 === Step 2.5: (Optional) Browse the source code in Gitea
 
 Your lab environment includes a personal Gitea instance with the DataSphere API source code
-already loaded.
-
-* *Gitea URL*: {gitea_url}/{user}/datasphere-api
-* *Credentials*: `{user}` / `{password}`
+already loaded. Click the *Gitea* tab in the Showroom sidebar, or open:
+`{gitea_url}/{user}/datasphere-api`
 
 You can skip this step -- the next command pulls the source directly from Gitea.
 
@@ -651,7 +653,11 @@ NOTE: If you see a warning about the repository being unreachable, click
 *Show advanced Git options* and select a *Source Secret* with your Gitea credentials.
 The CLI command handles private repositories automatically.
 +
-. OpenShift detects the Python language and selects the builder image automatically.
+. OpenShift detects the repository and selects a build strategy. If it shows *Dockerfile*
+  instead of *Builder Image*, click *Edit Import Strategy* and select *Builder Image*,
+  then choose the *Python* builder.
+. If the *Application* field auto-populates with `datasphere-ui` (from the earlier
+  deployment), clear it -- the API should be in its own group or left ungrouped.
 . Set *Name* to `datasphere-api`, then click *Create*.
 
 To watch the build:
@@ -832,18 +838,6 @@ deployment "datasphere-ui" successfully rolled out
 deployment "datasphere-api" successfully rolled out
 ----
 =====
-====
-
-[%collapsible]
-.Using the Web Console
-====
-NOTE: The DataSphere chart is served from your Gitea package registry as a direct chart URL.
-Use the terminal to run `helm install` as shown in the CLI steps above. The console's Helm
-catalog only shows pre-registered chart repositories.
-
-After the `helm install` command completes, return to *Helm* in the left navigation. The
-*datasphere* release appears showing *Status: deployed* and *Revision: 1*.
-Each `helm upgrade` increments the revision -- Helm tracks the full history here.
 ====
 
 === Step 3.4: Verify the application
