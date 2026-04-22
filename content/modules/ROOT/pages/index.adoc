@@ -1,36 +1,36 @@
 = OpenShift Getting Started
 
-ifeval::["{lab_number}" == "1"]
-== Lab 1 of 3: Deploy the App
+ifeval::["{module}" == "1"]
+== Module 1 of 3: Deploy the App
 
-Welcome to the first lab in the *OpenShift Getting Started* series.
+Welcome to the first module in the *OpenShift Getting Started* series.
 
-This lab is designed for developers, platform engineers, and DevOps engineers who are new to OpenShift.
-The lab is hands-on and self-contained: you'll work directly on a live OpenShift cluster.
+This module is designed for developers, platform engineers, and DevOps engineers who are new to OpenShift.
+The module is hands-on and self-contained: you'll work directly on a live OpenShift cluster.
 
 === What You'll Learn
 
 Deploy an application 3 different ways: from a container image, via Source-to-Image, and with a Helm chart. Learn the core building blocks: Pods, Services, and Routes.
 endif::[]
 
-ifeval::["{lab_number}" == "2"]
-== Lab 2 of 3: Apps That Never Go Down
+ifeval::["{module}" == "2"]
+== Module 2 of 3: Apps That Never Go Down
 
-Welcome to the second lab in the *OpenShift Getting Started* series.
+Welcome to the second module in the *OpenShift Getting Started* series.
 
-**Prerequisites:** This lab assumes you have completed Lab 1 or are familiar with basic OpenShift concepts (Pods, Services, Routes, and Deployments).
+**Prerequisites:** This module assumes you have completed Module 1 or are familiar with basic OpenShift concepts (Pods, Services, Routes, and Deployments).
 
 === What You'll Learn
 
 Configure health probes, scale to multiple replicas, and set up autoscaling to handle real traffic. Understand how OpenShift keeps your applications running and resilient.
 endif::[]
 
-ifeval::["{lab_number}" == "3"]
-== Lab 3 of 3: Git Is Your Source of Truth
+ifeval::["{module}" == "3"]
+== Module 3 of 3: Git Is Your Source of Truth
 
-Welcome to the third lab in the *OpenShift Getting Started* series.
+Welcome to the third module in the *OpenShift Getting Started* series.
 
-**Prerequisites:** This lab assumes you have completed Labs 1 and 2 or are familiar with basic OpenShift concepts and application deployment.
+**Prerequisites:** This module assumes you have completed Modules 1 and 2 or are familiar with basic OpenShift concepts and application deployment.
 
 === What You'll Learn
 
@@ -39,4 +39,4 @@ endif::[]
 
 == Get Started
 
-Click the lab link in the left sidebar to begin.
+Click the module link in the left sidebar to begin.
