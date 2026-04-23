@@ -121,6 +121,7 @@ Copy the URL from the `HOST/PORT` column and open it in a new browser tab.
 ====
 In the left navigation, expand *Networking* and click *Routes*.
 
+// SCREENSHOT NEEDED: Networking → Routes in {user}-datasphere, showing datasphere-ui route with URL in Location column
 image::console-guide/lab-02-apps-never-down/01-routes-datasphere-ui.png[Routes list showing the datasphere-ui route with its URL in the Location column]
 
 Click the URL in the *Location* column to open the DataSphere app in a new browser tab.
@@ -200,12 +201,14 @@ replacement automatically.
 ====
 In the left navigation, click *Workloads* → *Pods*.
 
+// SCREENSHOT NEEDED: Workloads → Pods in {user}-datasphere showing all 3 pods (api, redis, ui) Running with 0 Restarts
 image::console-guide/lab-02-apps-never-down/02-pods-list-all-running.png[Pods list showing all 3 DataSphere pods running with 0 restarts]
 
 You will see 3 pods running: the API, Redis, and UI. Note the *Restarts* column is 0 for all.
 
 Click the three-dot menu (*⋮*) to the right of the `datasphere-ui-*` pod and select *Delete Pod*.
 
+// SCREENSHOT NEEDED: Pods list with three-dot menu (⋮) open on the datasphere-ui pod, showing "Delete Pod" option
 image::console-guide/lab-02-apps-never-down/03-pods-delete-three-dot-menu.png[Pods list with the three-dot menu open on the datasphere-ui pod showing Delete Pod option]
 
 Click *Delete* in the confirmation dialog.
@@ -213,6 +216,7 @@ Click *Delete* in the confirmation dialog.
 Watch the list -- the deleted pod moves to *Terminating* while OpenShift immediately creates
 a replacement in *ContainerCreating*, then *Running*.
 
+// SCREENSHOT NEEDED: Pods list mid-replacement — old datasphere-ui pod in Terminating status, new pod in ContainerCreating or Running
 image::console-guide/lab-02-apps-never-down/04-pod-terminating-new-creating.png[Pods list showing old pod Terminating and new pod already starting]
 ====
 
@@ -292,19 +296,23 @@ routing to the 2 healthy pods -- no outage.
 ====
 In the left navigation, click *Workloads* → *Deployments*, then click *datasphere-ui*.
 
+// SCREENSHOT NEEDED: Workloads → Deployments → datasphere-ui detail page, showing the pod donut/count and the Actions menu
 image::console-guide/lab-02-apps-never-down/05-deployment-datasphere-ui.png[datasphere-ui Deployment detail page showing current pod count]
 
 Click *Actions* → *Edit Pod count*. Change the value to `3` and click *Save*.
 
+// SCREENSHOT NEEDED: Edit Pod count dialog with value changed to 3, before clicking Save
 image::console-guide/lab-02-apps-never-down/06-edit-pod-count-dialog.png[Edit Pod count dialog set to 3]
 
 Click the *Pods* tab and wait until all 3 replicas show `1/1` in the *Ready* column.
 
+// SCREENSHOT NEEDED: Pods tab on datasphere-ui Deployment detail page showing all 3 replicas at 1/1 Running
 image::console-guide/lab-02-apps-never-down/07-pods-3-replicas-running.png[Pods tab showing all 3 datasphere-ui replicas in Running state]
 
 Return to *Workloads* → *Pods*. Click the three-dot menu (*⋮*) on any `datasphere-ui-*`
 pod and select *Delete Pod* → *Delete*.
 
+// SCREENSHOT NEEDED: Pods list (Workloads → Pods) showing 3 datasphere-ui pods, with three-dot menu open on one showing Delete Pod
 image::console-guide/lab-02-apps-never-down/08-pods-delete-with-3-replicas.png[Pods list showing delete action on one of 3 running datasphere-ui pods]
 
 Watch the list: the deleted pod terminates while the 2 survivors keep running. OpenShift
@@ -394,6 +402,7 @@ Slide back to *0%*. The HPA scales down over about 20 seconds. Press `Ctrl+C` to
 ====
 In the left navigation, click *Workloads* → *HorizontalPodAutoscalers*. Click *datasphere-api*.
 
+// SCREENSHOT NEEDED: Workloads → HorizontalPodAutoscalers → datasphere-api detail page, showing Min/Max replicas, Current replicas, and the Conditions section
 image::console-guide/lab-02-apps-never-down/09-hpa-details.png[HPA detail page showing current replicas, desired replicas, min and max settings]
 
 This page shows *Current replicas* and *Desired replicas* in real time.
@@ -401,6 +410,7 @@ This page shows *Current replicas* and *Desired replicas* in real time.
 Open the `datasphere-api` Deployment (*Workloads* → *Deployments* → *datasphere-api*) and
 click the *Metrics* tab for a live CPU graph.
 
+// SCREENSHOT NEEDED: datasphere-api Deployment → Metrics tab showing CPU usage graph (capture while load is being applied so the spike is visible)
 image::console-guide/lab-02-apps-never-down/10-deployment-api-metrics.png[datasphere-api Metrics tab showing the CPU usage graph]
 
 Drag the *Simulated Traffic* slider in the DataSphere app to about *50%* and watch the
@@ -464,6 +474,7 @@ Go to *Workloads* → *Pods* and watch the `datasphere-api-*` pods. Within about
 . One pod shows `0/1` in the *Ready* column: the readiness probe pulled it from the Service
 . The *Restarts* counter increments: the liveness probe restarted the container
 
+// SCREENSHOT NEEDED: Workloads → Pods showing datasphere-api pods — one pod with Restarts = 1 (or showing 0/1 Ready transitioning), others still Running
 image::console-guide/lab-02-apps-never-down/11-pods-api-probe-restart.png[Pods list showing one datasphere-api pod with Restarts incremented to 1]
 
 TIP: Click the restarted API pod name and open the *Events* tab to see the liveness probe
@@ -505,7 +516,11 @@ Now using project "{user}-lab" on server "{openshift_api_url}".
 [%collapsible]
 .Using the Web Console
 ====
-In the top-left corner, click the project name and select *`{user}-lab`* from the list.
+In the top-left corner of the navigation panel, click the current project name to open the
+project selector. Select *`{user}-lab`* from the list.
+
+// SCREENSHOT NEEDED: Project selector dropdown open in Core Platform view with {user}-lab highlighted
+image::console-guide/lab-02-apps-never-down/19-project-selector-lab.png[Project selector dropdown showing user-lab highlighted and ready to select]
 ====
 
 === Step 2.2: Deploy the full stack
@@ -585,10 +600,12 @@ include::partial$datasphere-lab-manifests.yaml[]
 +
 . Click *Create*.
 
+// SCREENSHOT NEEDED: Import YAML editor (⊕ button) in {user}-lab with DataSphere manifests pasted in, Create button visible at bottom
 image::console-guide/lab-02-apps-never-down/12-import-yaml-datasphere.png[Import YAML editor with DataSphere manifests pasted in and Create button visible]
 
 When all resources show *Created* status:
 
+// SCREENSHOT NEEDED: Post-create resource list showing all DataSphere resources (Deployments, Services, Route, ConfigMap) with green Created status
 image::console-guide/lab-02-apps-never-down/13-resources-created.png[Resources created list showing all DataSphere resources with green Created status]
 
 Go to *Networking* → *Routes* and click the `datasphere-ui` URL to open the app. Wait for
@@ -678,6 +695,7 @@ datasphere-api   Deployment/datasphere-api   cpu: 8%/50%          2         5   
 ====
 . In *Workloads* → *Deployments*, click *datasphere-api*, then click *Actions* → *Edit resource limits*.
 
+// SCREENSHOT NEEDED: Actions → Edit resource limits dialog on datasphere-api Deployment with CPU/Memory Request and Limit fields filled in (25m/100m CPU, 64Mi/128Mi memory)
 image::console-guide/lab-02-apps-never-down/14-edit-resource-limits.png[Edit resource limits dialog showing CPU and Memory Request and Limit fields]
 
 . Set these values and click *Save*:
@@ -689,6 +707,7 @@ image::console-guide/lab-02-apps-never-down/14-edit-resource-limits.png[Edit res
 
 . Click *Actions* → *Add HorizontalPodAutoscaler*.
 
+// SCREENSHOT NEEDED: Actions → Add HorizontalPodAutoscaler form on datasphere-api, filled in with Name=datasphere-api, Min=2, Max=5, CPU=50
 image::console-guide/lab-02-apps-never-down/15-add-hpa-form.png[Add HorizontalPodAutoscaler form showing Name, Minimum Pods, Maximum Pods and CPU Utilization fields]
 
 . Fill in the form and click *Save*:
@@ -731,7 +750,12 @@ stabilization window -- you don't need to wait for it.
 .Using the Web Console
 ====
 Watch the HPA details page (*Workloads* → *HorizontalPodAutoscalers* → *datasphere-api*).
-The *Current replicas* count climbs as CPU crosses the threshold. Slide back to *0%* when done.
+The *Current replicas* count climbs as CPU crosses the threshold.
+
+// SCREENSHOT NEEDED: HPA details page while scaled up — showing Current replicas > 2, Desired replicas climbing, and Last scale time updated
+image::console-guide/lab-02-apps-never-down/20-hpa-scaled-up.png[HPA detail page showing Current replicas at 4 or 5 with Last scale time updated after load was applied]
+
+Slide back to *0%* when done.
 ====
 
 === Step 2.4: Add health probes
@@ -800,6 +824,7 @@ oc describe deployment datasphere-api | grep -E "Liveness:|Readiness:"
 ====
 . On the *datasphere-api* Deployment detail page, click *Actions* → *Add Health Checks*.
 
+// SCREENSHOT NEEDED: Actions → Add Health Checks page on datasphere-api Deployment, showing the Liveness, Readiness, and Startup probe sections before filling them in
 image::console-guide/lab-02-apps-never-down/16-add-health-checks.png[Add health checks page showing Liveness, Readiness, and Startup probe sections]
 
 . Click *+ Add Liveness probe* and fill in:
@@ -819,6 +844,7 @@ image::console-guide/lab-02-apps-never-down/16-add-health-checks.png[Add health 
 * *Initial delay*: `5`
 * *Period*: `5`
 
+// SCREENSHOT NEEDED: Add Health Checks page with both Liveness (HTTP GET /health, port 8080, delay 10s, period 10s, failure 3) and Readiness (HTTP GET /health, port 8080, delay 5s, period 5s) filled in, before clicking Add
 image::console-guide/lab-02-apps-never-down/17-probes-configured.png[Add Health Checks page showing both liveness and readiness probes filled in before clicking Add]
 
 . Click *Add*.
@@ -893,6 +919,7 @@ unhealthy pod and restarted it automatically. Press `Ctrl+C` to stop.
 Go to *Workloads* → *Pods*. Within 40 seconds, the *Restarts* counter increments on one
 API pod.
 
+// SCREENSHOT NEEDED: Workloads → Pods in {user}-lab showing datasphere-api pods — one pod with Restarts = 1, others at 0, all Running
 image::console-guide/lab-02-apps-never-down/18-pods-api-probe-restart.png[Pods list showing one datasphere-api pod with Restarts incremented after liveness probe failure]
 
 TIP: Click the restarted pod name and open the *Events* tab to see the liveness probe
