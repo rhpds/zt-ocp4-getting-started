@@ -42,9 +42,10 @@ Log in with these credentials:
 TIP: If the left navigation panel is not visible after logging in, click the *≡* icon in
 the top-left corner to expand it. You only need to do this once.
 
-After logging in, click the perspective switcher in the top-left corner -- it may default
-to *Developer*. Select *Core platform*.
+After logging in, click the perspective switcher in the top-left corner of the navigation
+panel -- it may default to *Developer*. Select *Core platform*.
 
+// SCREENSHOT NEEDED: Core Platform perspective showing the 3 student projects (datasphere, lab, lab-helm)
 image::console-guide/01-core-platform-projects.png[Core Platform perspective showing all student projects]
 
 === Terminal (CLI)
@@ -73,7 +74,6 @@ Login successful.
 You have access to the following projects and can switch between them with 'oc project <projectname>':
 
   * {user}-datasphere
-    {user}-gitops
     {user}-lab
     {user}-lab-helm
 
@@ -84,12 +84,11 @@ Welcome! See 'oc help' to get started.
 
 === Your lab projects
 
-Several projects have been provisioned for you. The ones you'll use in this lab:
+Three projects have been provisioned for you:
 
 * `{user}-datasphere`: contains the pre-deployed DataSphere demo app -- explore it in Section 1
-* `{user}-lab`: your clean workspace -- you'll build here in Section 2 and Section 3
-
-You'll also see `{user}-gitops` and `{user}-lab-helm` -- those are used in later labs.
+* `{user}-lab`: your clean workspace -- you'll build here in Section 2
+* `{user}-lab-helm`: a second clean workspace -- you'll use this in Section 3
 
 NOTE: In OpenShift, a Project is equivalent to a Kubernetes namespace. It scopes your resources and controls access.
 
@@ -116,20 +115,30 @@ Get the application URL:
 oc get route datasphere-ui
 ----
 
-Copy the URL from the `HOST` column and open it in your browser.
+Copy the URL from the `HOST/PORT` column and open it in a new browser tab.
 ====
 
 [%collapsible]
 .Using the Web Console
 ====
-In the Project selector at the top of the console, select *`{user}-datasphere`*.
+In the Core Platform view, click *`{user}-datasphere`* in the project list to open it.
 
-In the left navigation, expand *Networking* and click *Routes*. Click the URL in the
-*Location* column for `datasphere-ui` to open the application.
+// SCREENSHOT NEEDED: Core Platform Projects list with {user}-datasphere highlighted/selected, showing the click target
+image::console-guide/lab-01-deploy-the-app/01-project-list-select-datasphere.png[Core Platform project list with user-datasphere highlighted]
+
+In the left navigation, expand *Networking* and click *Routes*.
+
+// SCREENSHOT NEEDED: Networking → Routes in {user}-datasphere showing datasphere-ui route with the URL in the Location column
+image::console-guide/lab-01-deploy-the-app/01b-routes-datasphere-ui.png[Routes list showing the datasphere-ui route and its URL in the Location column]
+
+Click the URL in the *Location* column to open the application in a new browser tab.
 ====
 
 You'll see a live map of global datacenter sites. Click a site to toggle its status and
 watch the map respond in real time.
+
+// SCREENSHOT NEEDED: DataSphere app in the browser showing the live world map with green datacenter dots
+image::console-guide/lab-01-deploy-the-app/01c-datasphere-app-live-map.png[DataSphere application showing the live world map with datacenter sites]
 
 TIP: Try to keep the Showroom lab interface and the DataSphere application visible side by side.
 You'll be switching between them throughout the lab.
@@ -147,6 +156,7 @@ oc get all
 [%collapsible]
 .Expected output
 =====
+[subs="attributes+"]
 ----
 NAME                                    READY   STATUS    RESTARTS   AGE
 pod/datasphere-api-7d464fc7c4-xxxxx     1/1     Running   0          5m
@@ -163,10 +173,26 @@ deployment.apps/datasphere-api     1/1     1            1           5m
 deployment.apps/datasphere-redis   1/1     1            1           5m
 deployment.apps/datasphere-ui      1/1     1            1           5m
 
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/datasphere-api-7d464fc7c4     1         1         1       5m
+replicaset.apps/datasphere-redis-69c8864976   1         1         1       5m
+replicaset.apps/datasphere-ui-597f67c7bc      1         1         1       5m
+
+NAME                                                 REFERENCE                   TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+horizontalpodautoscaler.autoscaling/datasphere-api   Deployment/datasphere-api   cpu: 16%/50%   1         5         1          5m
+
 NAME                                     HOST/PORT
-route.route.openshift.io/datasphere-ui   datasphere-ui-{user}-datasphere.apps.{cluster_subdomain}
+route.route.openshift.io/datasphere-ui   datasphere-ui-{user}-datasphere.apps.{openshift_cluster_ingress_domain}
 ----
 =====
+
+Notice: three Pods, three Services, three Deployments -- but only one Route. The API and Redis
+have Services for internal communication, but only the frontend has a Route for external access.
+
+NOTE: You may see more than one `datasphere-api` pod if the Horizontal Pod Autoscaler (HPA)
+has already scaled the API up under simulated load -- that's expected. You may also see a
+`WARNING: apps.openshift.io/v1 DeploymentConfig is deprecated` line in the output; this comes
+from OpenShift's own internal components, not from DataSphere, and can be ignored.
 ====
 
 [%collapsible]
@@ -180,18 +206,12 @@ You'll see 3 pods: `datasphere-api`, `datasphere-redis`, and `datasphere-ui` -- 
 with *1/1* Ready.
 ====
 
-NOTE: You may see more than one `datasphere-api` pod if the Horizontal Pod Autoscaler (HPA)
-has already scaled the API up under simulated load -- that's expected. You may also see a
-`WARNING: apps.openshift.io/v1 DeploymentConfig is deprecated` line in the output; this comes
-from OpenShift's own internal components, not from DataSphere, and can be ignored.
-
-Notice: three Pods, three Services, three Deployments -- but only one Route. The API and Redis
-have Services for internal communication, but only the frontend has a Route for external access.
-
 === Step 1.3: Explore the Pod
 
 A *Pod* is the smallest deployable unit in OpenShift. It wraps one or more containers and gives
-them a shared network and storage context.
+them a shared network and storage context. Pods are ephemeral -- they can be created, destroyed,
+and replaced at any time. A *Deployment* manages this lifecycle and ensures the right number of
+pods are always running.
 
 [%collapsible]
 .Using the Terminal (CLI)
@@ -221,6 +241,9 @@ Containers:
 ----
 =====
 
+Notice the *Labels*: `app=datasphere` and `component=ui`. These are how OpenShift connects
+resources together -- Services find their Pods by matching these labels.
+
 Check the application logs:
 
 [source,role="execute"]
@@ -243,12 +266,6 @@ Service finds this pod.
 
 Click the *Logs* tab to see the live application logs.
 ====
-
-Notice the Labels: `app=datasphere` and `component=ui`. These are how OpenShift connects
-resources together -- Services find their Pods by matching these labels.
-
-NOTE: Pods are ephemeral. They can be created, destroyed, and replaced at any time.
-A *Deployment* manages this lifecycle and ensures the right number of pods are always running.
 
 === Step 1.4: Explore the Service
 
@@ -274,6 +291,9 @@ Port:              8080/TCP
 Endpoints:         10.x.x.x:8080
 ----
 =====
+
+Notice the *Selector* field: `app=datasphere,component=ui`. This label-based selection is how
+OpenShift connects resources together -- the Service routes traffic to every Pod that matches.
 ====
 
 [%collapsible]
@@ -292,9 +312,6 @@ internal DNS name -- `datasphere-ui.{user}-datasphere.svc.cluster.local` -- that
 applications inside the cluster use to reach this Service by name.
 ====
 
-Notice the `Selector` field: `app=datasphere,component=ui`. This label-based selection is how
-OpenShift connects resources together.
-
 === Step 1.5: Explore the Route
 
 A *Route* exposes a Service to traffic from outside the cluster. It provides a public hostname
@@ -311,9 +328,10 @@ oc describe route datasphere-ui
 [%collapsible]
 .Expected output (key fields)
 =====
+[subs="attributes+"]
 ----
 Name:            datasphere-ui
-Host:            datasphere-ui-{user}-datasphere.apps.{cluster_subdomain}
+Host:            datasphere-ui-{user}-datasphere.{openshift_cluster_ingress_domain}
 TLS Termination: edge
 Insecure Policy: Redirect
 Service:         datasphere-ui
@@ -334,14 +352,14 @@ communication but no external Route. Click *datasphere-ui* to see the details.
 
 image::console-guide/lab-01-deploy-the-app/07-route-ui-details.png[Route detail page for datasphere-ui showing public URL, TLS termination edge, and target port 8080]
 
-The *Location* field is the public URL. OpenShift generated the hostname and manages the TLS
-certificate -- there is nothing to configure.
+The *Location* field is the public URL. OpenShift generates the hostname and manages TLS
+automatically -- you only need to configure further if you want to customize your TLS strategy.
 ====
 
 === Step 1.6: Why datasphere-api has no Route
 
-Look at the Services list: `datasphere-api` has a Service but no Route. That's deliberate.
 The API only needs to be reachable from within the cluster, not from the internet.
+To see this, compare the Services list to the Routes list.
 
 [%collapsible]
 .Using the Terminal (CLI)
@@ -364,8 +382,13 @@ datasphere-api   ClusterIP   172.30.14.22   <none>        8080/TCP   5m
 [%collapsible]
 .Using the Web Console
 ====
-In the left navigation, click *Services*. Notice the list shows three Services
-(`datasphere-api`, `datasphere-ui`, `redis`) but the Routes page shows only one Route.
+In the left navigation, click *Services*. The list shows three Services:
+`datasphere-api`, `datasphere-ui`, and `redis`. Now click *Routes* -- only one Route
+exists: `datasphere-ui`.
+
+// SCREENSHOT NEEDED: Routes page in {user}-datasphere showing only datasphere-ui — no route for datasphere-api or redis
+image::console-guide/lab-01-deploy-the-app/08-routes-one-only.png[Routes list showing only the datasphere-ui route — no route for datasphere-api or redis]
+
 `datasphere-api` is reachable inside the cluster by name -- no Route needed.
 ====
 
@@ -422,8 +445,11 @@ oc project {user}-lab
 [%collapsible]
 .Using the Web Console
 ====
-Click the perspective switcher and select *Developer*. In the Project selector at the top,
-choose *`{user}-lab`*.
+Click the perspective switcher in the upper left of the navigation panel and select *Developer*.
+In the Project dropdown at the top of the content area, choose *`{user}-lab`*.
+
+// SCREENSHOT NEEDED: Developer perspective Topology view showing {user}-lab selected and "No resources found" / empty state
+image::console-guide/lab-01-deploy-the-app/08b-developer-perspective-empty-lab.png[Developer perspective showing the empty user-lab project in Topology view]
 ====
 
 This project is empty -- a clean workspace for you to build in.
@@ -486,13 +512,21 @@ deployment "datasphere-ui" successfully rolled out
 ====
 In the left navigation, click *+Add*, then click *Container images*.
 
-image::console-guide/lab-01-deploy-the-app/09-deploy-image-form.png[Deploy Image form with datasphere-ui image name entered from external registry]
+Fill in the form:
 
 . In the *Image name from external registry* field, enter: `{datasphere_ui_image}`
 . Set *Name* to `datasphere-ui`.
+. In the *Application Name* field, change the value to `datasphere-ui`.
+  This groups components together in the Topology view -- naming it clearly
+  will matter when you add the API in the next step.
+
+// SCREENSHOT NEEDED: Deploy Image form showing {datasphere_ui_image} (1.4.5) in the image field, Name=datasphere-ui, Application Name=datasphere-ui filled in
+image::console-guide/lab-01-deploy-the-app/09-deploy-image-form.png[Deploy Image form with datasphere-ui image name entered and Application Name set to datasphere-ui]
+
 . Scroll down to *Advanced options*. Confirm *Target port* is *8080*, then check the
   *Create a route* checkbox.
 +
+// SCREENSHOT NEEDED: Deploy Image Advanced Options section showing Target Port=8080 and Create a route checkbox checked
 image::console-guide/lab-01-deploy-the-app/11-deploy-image-create-route-checked.png[Deploy Image form Advanced Options with Create a route checkbox checked and target port 8080]
 +
 . Click *Create*.
@@ -537,13 +571,27 @@ route.route.openshift.io/datasphere-ui created
 oc get route datasphere-ui
 ----
 
-Copy the URL from the `HOST` column and open it in your browser.
+[%collapsible]
+.Expected output
+=====
+[subs="attributes+"]
+----
+NAME            HOST/PORT                                                          PATH   SERVICES        PORT       TERMINATION   WILDCARD
+datasphere-ui   datasphere-ui-{user}-lab.{openshift_cluster_ingress_domain}              datasphere-ui   8080-tcp   edge          None
+----
+=====
+
+Copy the URL from the `HOST/PORT` column and open it in your browser.
 ====
 
 [%collapsible]
 .Using the Web Console
 ====
-In *Topology*, click the external link icon on the `datasphere-ui` node to open the application.
+In *Topology*, click the *open URL* icon (the arrow-in-box icon in the top-right corner of
+the `datasphere-ui` node) to open the application in a new browser tab.
+
+// SCREENSHOT NEEDED: Topology view showing the datasphere-ui node with an arrow or callout pointing to the open URL icon in its top-right corner
+image::console-guide/lab-01-deploy-the-app/09b-topology-datasphere-ui-open-url.png[Topology view showing datasphere-ui node with the open URL icon highlighted]
 ====
 
 The DataSphere UI loads -- but the map is empty. No datacenter sites, no status data.
@@ -562,8 +610,12 @@ This is *Source-to-Image* (S2I).
 === Step 2.5: (Optional) Browse the source code in Gitea
 
 Your lab environment includes a personal Gitea instance with the DataSphere API source code
-already loaded. Click the *Gitea* tab in the Showroom sidebar, or open:
-`{gitea_url}/{user}/datasphere-api`
+already loaded. Click the *Gitea* tab in the Showroom sidebar. Once Gitea opens, navigate to
+your `datasphere-api` repository by clicking your username in the top-right corner and selecting
+*Your repositories*, then clicking *datasphere-api*.
+
+You can also open the repository directly in a new tab:
+link:{gitea_url}/{user}/datasphere-api[{gitea_url}/{user}/datasphere-api, window=_blank]
 
 You can skip this step -- the next command pulls the source directly from Gitea.
 
@@ -585,10 +637,9 @@ oc new-app python~{gitea_url}/{user}/datasphere-api --name=datasphere-api
 .Expected output
 =====
 ----
---> Found image ... (Python 3.12 on UBI 9)
+--> Found image ... (Python 3.12 on UBI 8)
     ...
 --> Creating resources ...
-    imagestream.image.openshift.io "python" created
     imagestream.image.openshift.io "datasphere-api" created
     buildconfig.build.openshift.io "datasphere-api" created
     deployment.apps "datasphere-api" created
@@ -645,26 +696,28 @@ deployment "datasphere-api" successfully rolled out
 ====
 In the left navigation, click *+Add*, then click *Import from Git*.
 
-image::console-guide/lab-01-deploy-the-app/10-import-from-git-form.png[Import from Git form with Gitea datasphere-api repository URL and Source Secret field for authentication]
-
-. In the *Git Repo URL* field, enter: `{gitea_url}/{user}/datasphere-api`
-+
-NOTE: If you see a warning about the repository being unreachable, click
-*Show advanced Git options* and select a *Source Secret* with your Gitea credentials.
-The CLI command handles private repositories automatically.
-+
+. In the *Git Repo URL* field, paste: `{gitea_url}/{user}/datasphere-api`
 . OpenShift detects the repository and selects a build strategy. If it shows *Dockerfile*
   instead of *Builder Image*, click *Edit Import Strategy* and select *Builder Image*,
   then choose the *Python* builder.
-. If the *Application* field auto-populates with `datasphere-ui` (from the earlier
-  deployment), clear it -- the API should be in its own group or left ungrouped.
-. Set *Name* to `datasphere-api`, then click *Create*.
+. Set *Application* to *No Application Group* -- the API should be separate from the
+  `datasphere-ui` group you created in Step 2.2.
+. Set *Name* to `datasphere-api`.
+. Scroll down to *Advanced options*. Under *Show advanced Routing options*, *uncheck*
+  *Create a Route* -- the API should not be publicly accessible.
+. Click *Create*.
 
-To watch the build:
+// SCREENSHOT NEEDED: Import from Git form showing Gitea URL pasted, Builder Image selected (Python), Application=No Application Group, Name=datasphere-api, Create Route unchecked
+image::console-guide/lab-01-deploy-the-app/10-import-from-git-form.png[Import from Git form with Gitea datasphere-api URL, Builder Image selected, No Application Group, and Create Route unchecked]
 
-. Click *Builds* in the left navigation.
+To watch the build progress:
+
+. In the left navigation, click *Builds*.
 . Click the *datasphere-api* BuildConfig that appears.
-. Select the *Builds* tab and click the build name, then *Logs*.
+. Select the *Builds* tab, click the build name, then click *Logs*.
+
+// SCREENSHOT NEEDED: Build Logs page for datasphere-api-1 showing the S2I build output with pip install lines and "Push successful" at the end
+image::console-guide/lab-01-deploy-the-app/10b-build-logs-datasphere-api.png[Build logs page showing S2I build output including pip install and Push successful]
 
 When the build shows *Complete*, the Deployment starts automatically.
 ====
@@ -682,17 +735,18 @@ configured, no external registry account needed.
 oc get route datasphere-ui
 ----
 
-Copy the URL from the `HOST` column and open it in your browser.
+Copy the URL from the `HOST/PORT` column and open it in your browser.
 ====
 
 [%collapsible]
 .Using the Web Console
 ====
 In *Topology*, both `datasphere-ui` and `datasphere-api` now appear with solid blue rings.
+Click the *open URL* icon (the arrow-in-box in the top-right corner) on the `datasphere-ui`
+node to open the application.
 
-image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing datasphere-ui and datasphere-api both deployed with the external Route icon on datasphere-ui]
-
-Click the external link icon on `datasphere-ui` to open the application.
+// SCREENSHOT NEEDED: Topology view showing ONLY datasphere-ui and datasphere-api nodes (no redis), both with solid blue rings, with arrow pointing to the open URL icon on datasphere-ui
+image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing datasphere-ui and datasphere-api both deployed with the open URL icon on datasphere-ui]
 ====
 
 The map is now populated with datacenter sites. You didn't reconfigure the UI. You didn't update
@@ -719,11 +773,9 @@ remove every resource it owns.
 
 === Step 3.1: Clean up the manual deployments
 
-First, remove the resources you created manually in Section 2:
+First, remove the resources you created manually in Section 2. Use the Terminal for this step --
+deleting multiple resource types is much faster from the CLI.
 
-[%collapsible]
-.Using the Terminal (CLI)
-====
 [source,role="execute"]
 ----
 oc delete all --selector app=datasphere-ui
@@ -732,20 +784,19 @@ oc delete all --selector app=datasphere-api
 
 [%collapsible]
 .Expected output
-=====
+====
 [subs="attributes+"]
 ----
-service "datasphere-ui" deleted
-deployment.apps "datasphere-ui" deleted
-imagestream.image.openshift.io "datasphere-ui" deleted
-route.route.openshift.io "datasphere-ui" deleted
-service "datasphere-api" deleted
-deployment.apps "datasphere-api" deleted
-buildconfig.build.openshift.io "datasphere-api" deleted
-build.build.openshift.io "datasphere-api-1" deleted
-imagestream.image.openshift.io "datasphere-api" deleted
+service "datasphere-ui" deleted from {user}-lab namespace
+deployment.apps "datasphere-ui" deleted from {user}-lab namespace
+imagestream.image.openshift.io "datasphere-ui" deleted from {user}-lab namespace
+route.route.openshift.io "datasphere-ui" deleted from {user}-lab namespace
+service "datasphere-api" deleted from {user}-lab namespace
+deployment.apps "datasphere-api" deleted from {user}-lab namespace
+buildconfig.build.openshift.io "datasphere-api" deleted from {user}-lab namespace
+imagestream.image.openshift.io "datasphere-api" deleted from {user}-lab namespace
 ----
-=====
+====
 
 Verify the project is clean:
 
@@ -756,25 +807,16 @@ oc get all
 
 [%collapsible]
 .Expected output
-=====
+====
 [subs="attributes+"]
 ----
 No resources found in {user}-lab namespace.
 ----
-=====
 ====
 
-[%collapsible]
-.Using the Web Console
-====
-In the *Developer* perspective, navigate to *Topology*. Select each component
-(`datasphere-ui`, `datasphere-api`) and use *Actions > Delete Deployment* to remove them,
-along with their Services and Routes.
+=== Step 3.2: Switch to the Helm project and deploy
 
-NOTE: For cleanup of multiple resources, the CLI is simpler -- use the Terminal option for this step.
-====
-
-=== Step 3.2: Switch to the Helm project
+Switch to `{user}-lab-helm` -- this is a separate, clean namespace for the Helm deployment:
 
 [%collapsible]
 .Using the Terminal (CLI)
@@ -783,21 +825,7 @@ NOTE: For cleanup of multiple resources, the CLI is simpler -- use the Terminal 
 ----
 oc project {user}-lab-helm
 ----
-====
 
-[%collapsible]
-.Using the Web Console
-====
-In the Project selector, switch to *`{user}-lab-helm`*. Then click *Helm* in the left navigation.
-
-image::console-guide/lab-01-deploy-the-app/13-helm-releases-empty.png[Helm Releases page showing No Helm Releases found — starting state before helm install]
-====
-
-=== Step 3.3: Deploy the full application
-
-[%collapsible]
-.Using the Terminal (CLI)
-====
 Install the DataSphere chart -- this deploys UI, API, and Redis in one command:
 
 [source,role="execute",subs="attributes+"]
@@ -823,7 +851,7 @@ TEST SUITE: None
 `REVISION: 1` tells you this is the first install. Each `helm upgrade` increments the revision
 and Helm keeps the history -- you can roll back to any previous revision.
 
-Wait for both components:
+Wait for all components:
 
 [source,role="execute"]
 ----
@@ -840,7 +868,23 @@ deployment "datasphere-api" successfully rolled out
 =====
 ====
 
-=== Step 3.4: Verify the application
+[%collapsible]
+.Using the Web Console
+====
+In the Project selector, switch to *`{user}-lab-helm`*.
+
+NOTE: The DataSphere chart is served from a direct Gitea URL and is not registered in the
+OpenShift Helm catalog. Run the `helm install` command from the Terminal as shown in the CLI
+steps above, then return here to verify the result.
+
+After the `helm install` completes, click *Helm* in the left navigation. The *datasphere*
+release appears with *Status: deployed* and *Revision: 1*.
+
+// SCREENSHOT NEEDED: Helm Releases page in {user}-lab-helm showing the datasphere release with Status: deployed and Revision: 1
+image::console-guide/lab-01-deploy-the-app/13-helm-releases-deployed.png[Helm Releases page showing the datasphere release deployed at Revision 1]
+====
+
+=== Step 3.3: Verify the application
 
 [%collapsible]
 .Using the Terminal (CLI)
@@ -850,17 +894,19 @@ deployment "datasphere-api" successfully rolled out
 oc get route datasphere-ui
 ----
 
-Copy the URL from the `HOST` column and open it in your browser.
+Copy the URL from the `HOST/PORT` column and open it in your browser.
 ====
 
 [%collapsible]
 .Using the Web Console
 ====
-In *Topology*, all three components appear together.
+In *Topology*, all three components appear together -- UI, API, and Redis -- deployed as a
+single Helm release.
 
-image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing datasphere-ui, datasphere-api, and datasphere-redis deployed by the Helm chart]
+// SCREENSHOT NEEDED: Topology view in {user}-lab-helm showing datasphere-ui, datasphere-api, AND datasphere-redis all deployed with solid blue rings (3 components from the Helm chart)
+image::console-guide/lab-01-deploy-the-app/14-topology-helm-all-three.png[Topology view showing datasphere-ui, datasphere-api, and datasphere-redis all deployed by the Helm chart]
 
-Click the external link icon on `datasphere-ui` to open the application.
+Click the *open URL* icon on `datasphere-ui` to open the application.
 ====
 
 All three components -- UI, API, and Redis -- fully operational, from a single command. Every
