@@ -41,23 +41,28 @@ the map update in real time. The application runs as three components:
 A pre-deployed DataSphere instance is already running in your `{user}-datasphere` project.
 Open it now to see what you'll be deploying and managing in this lab.
 
+=== Step 0.1: Open the pre-deployed DataSphere
+
 [%collapsible]
-.Get the URL (Terminal)
+.Using the Terminal (CLI)
 ====
 [source,role="execute",subs="attributes+"]
 ----
 oc get route datasphere-ui -n {user}-datasphere
 ----
 
-Copy the URL from the `HOST` column and open it in your browser.
+Copy the URL from the `HOST` column and open it in a new browser tab.
 ====
 
 [%collapsible]
-.Get the URL (Web Console)
+.Using the Web Console
 ====
-In the OpenShift console, switch to the *`{user}-datasphere`* project.
+In the OpenShift console, click *`{user}-datasphere`* in the project list.
 In the left navigation, expand *Networking* and click *Routes*.
 Click the URL in the *Location* column for `datasphere-ui`.
+
+// SCREENSHOT NEEDED: Networking → Routes in {user}-datasphere showing the datasphere-ui route with its URL in the Location column
+image::lab-03-routes-datasphere-ui.png[Routes list in user-datasphere showing datasphere-ui route and URL]
 ====
 
 In this lab you won't run `oc` commands or `helm install` to deploy DataSphere.
@@ -66,7 +71,7 @@ handles deployment, updates, and drift correction automatically from that point 
 
 == Get connected
 
-=== ArgoCD
+=== Step 0.2: Log in to ArgoCD
 
 Click the *ArgoCD* tab on the right side of this lab interface.
 
@@ -77,6 +82,9 @@ Click *Log in via OpenShift* and use your existing lab credentials:
 
 NOTE: ArgoCD uses your OpenShift login -- no separate account needed.
 The same credentials that work in the OpenShift console work here.
+
+// SCREENSHOT NEEDED: ArgoCD login page showing the "Log in via OpenShift" button
+image::lab-03-00-argocd-login.png[ArgoCD login page showing the Log in via OpenShift button]
 
 TIP: To open ArgoCD in a separate browser window instead, use this URL from
 your connection details: `{argocd_url}`
@@ -134,6 +142,8 @@ Both deployments run in parallel, which makes it easy to compare the GitOps-mana
 instance against the pre-deployed one as you work through the lab.
 
 == Section 1: Your ArgoCD instance (3 minutes)
+
+=== Step 1.1: Confirm your ArgoCD instance is empty
 
 After logging in, you'll see the ArgoCD dashboard with no applications listed.
 That's expected -- your ArgoCD instance starts empty. You'll register the first
@@ -311,12 +321,15 @@ your `datasphere-gitops` repository:
 * *Repository*: `datasphere-gitops`
 
 TIP: To open Gitea in a separate browser window instead, go to:
-`{gitea_url}/{user}/datasphere-gitops`
+link:{gitea_url}/{user}/datasphere-gitops[{gitea_url}/{user}/datasphere-gitops, window=_blank]
 
 Log in with your lab credentials if prompted:
 
 * *Username*: `{user}`
 * *Password*: `{password}`
+
+// SCREENSHOT NEEDED: Gitea repository view for {user}/datasphere-gitops showing the file list (values.yaml visible)
+image::lab-03-gitea-repo.png[Gitea datasphere-gitops repository showing values.yaml in the file list]
 
 You'll see the `datasphere-gitops` repository: the Helm chart that ArgoCD used to
 deploy DataSphere. This is the same chart source you used in Module 1 -- but with one
@@ -367,6 +380,9 @@ Add MEA Hub (Nairobi) -- bring Middle East and Africa region online
 
 Leave all other settings at their defaults and click *Commit Changes*.
 
+// SCREENSHOT NEEDED: Gitea Commit Changes section with the commit message filled in, before clicking Commit Changes
+image::lab-03-gitea-commit.png[Gitea commit form showing the commit message filled in and the Commit Changes button]
+
 === Step 3.4: Watch ArgoCD detect and apply the change
 
 Switch back to the *ArgoCD* tab. ArgoCD polls your repository every 3 minutes --
@@ -390,6 +406,9 @@ image::lab-03-10-argocd-synced-after-change.png[ArgoCD showing Synced and Health
 
 Reload the link:https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/[DataSphere app, window=_blank] you opened in Step 2.4. A new hub dot appears in East Africa.
 Backbone arcs connect Nairobi to all other major hubs globally.
+
+// SCREENSHOT NEEDED: DataSphere app showing the MEA Hub (Nairobi) as a new major hub in East Africa with backbone arcs connecting it to other major hubs
+image::lab-03-datasphere-mea-hub.png[DataSphere map showing the new MEA Hub major datacenter in Nairobi with backbone arcs to other major hubs]
 
 You made 1 commit. ArgoCD handled the rest.
 
