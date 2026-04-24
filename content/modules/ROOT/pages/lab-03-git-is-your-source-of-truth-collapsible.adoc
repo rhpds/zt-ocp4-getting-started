@@ -268,6 +268,7 @@ oc get pods
 ----
 NAME                                READY   STATUS    RESTARTS   AGE
 argocd-application-controller-0     1/1     Running   0          10m
+argocd-dex-server-xxxxxxxxxx-xxxxx  1/1     Running   0          10m
 argocd-redis-xxxxxxxxxx-xxxxx       1/1     Running   0          10m
 argocd-repo-server-xxxxxxxxxx-xx    1/1     Running   0          10m
 argocd-server-xxxxxxxxxx-xxxxx      1/1     Running   0          10m
@@ -277,7 +278,7 @@ datasphere-ui-597f67c7bc-xxxxx      1/1     Running   0          2m
 ----
 =====
 
-You'll see 7 pods in total. The 4 `argocd-*` pods are your personal ArgoCD
+You'll see 8 pods in total. The 5 `argocd-*` pods are your personal ArgoCD
 instance -- it lives in the same project so it can manage resources here
 directly. The 3 `datasphere-*` pods are the application ArgoCD just deployed.
 ====
@@ -292,7 +293,7 @@ In the left navigation, click *Workloads* → *Pods*.
 
 image::lab-03-06-pods-running-gitops-lab.png[Pods list in the gitops project showing all 3 DataSphere pods in Running status]
 
-You'll see 7 pods in total. The 4 `argocd-*` pods are your personal ArgoCD
+You'll see 8 pods in total. The 5 `argocd-*` pods are your personal ArgoCD
 instance -- it lives in the same project so it can manage resources here
 directly. The 3 `datasphere-*` pods are the application ArgoCD just deployed.
 ====
