@@ -206,12 +206,10 @@ You'll see what Self Heal does in Section 4.
 [cols="1,2",options="header"]
 |===
 | Field | Value
-| *Repository URL* | `{gitea_url}/{user}/datasphere-gitops`
+| *Repository URL* | `pass:a[{gitea_url}/{user}/datasphere-gitops]`
 | *Revision* | `HEAD`
 | *Path* | `.`
 |===
-
-ArgoCD detects that the repository contains a Helm chart and shows a *Helm* badge next to the path.
 
 ==== Destination
 
@@ -245,7 +243,7 @@ Git and reconciled here automatically.
 
 image::lab-03-05-argocd-resource-tree.png[ArgoCD resource tree showing all DataSphere resources]
 
-While you're here, notice the top navigation:
+While you're here, notice the left sidebar navigation:
 
 * *Applications*: the list of Git-managed deployments -- the `datasphere` tile you just created
 * *Settings*: where repositories, clusters, and projects are configured
@@ -309,15 +307,13 @@ instance -- it lives in the same project so it can manage resources here
 directly. The 3 `datasphere-*` pods are the application ArgoCD just deployed.
 ====
 
+NOTE: In this lab, each student gets their own ArgoCD instance for isolation.
+In a real cluster, you would typically run a single ArgoCD instance that manages
+applications across all namespaces.
+
 === Step 2.4: Open the application
 
-Back in the *ArgoCD* tab, find the *datasphere-ui* Route resource in the resource tree
-and click it.
-
-image::lab-03-08-argocd-route-resource.png[ArgoCD resource tree with the datasphere-ui Route selected and the external link icon visible in the detail panel]
-
-A detail panel opens on the right. Click the hostname link to open DataSphere in
-a new browser tab. If no link appears in the detail panel, open the app directly:
+Open the DataSphere app that ArgoCD just deployed:
 
 link:https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/[https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/, window=_blank]
 
