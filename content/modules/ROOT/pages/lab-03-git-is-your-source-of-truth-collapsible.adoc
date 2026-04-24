@@ -331,30 +331,25 @@ updates itself. No `oc apply`. No Helm commands. Just a commit.
 
 === Step 3.1: Open your Gitea repository
 
-Click the *Gitea* tab on the right side of this lab interface, then navigate to
-your `datasphere-gitops` repository:
-
-* *Owner*: `{user}`
-* *Repository*: `datasphere-gitops`
-
-TIP: To open Gitea in a separate browser window instead, go to:
-link:{gitea_url}/{user}/datasphere-gitops[{gitea_url}/{user}/datasphere-gitops, window=_blank]
-
-Log in with your lab credentials if prompted:
+Click the *Gitea* tab on the right side of this lab interface and log in:
 
 * *Username*: `{user}`
 * *Password*: `{password}`
 
+Once logged in, your repositories are listed on the dashboard. Click *datasphere-gitops*.
+
+// SCREENSHOT NEEDED: Gitea dashboard after login showing the user's repositories with datasphere-gitops visible
+image::lab-03-gitea-dashboard.png[Gitea dashboard showing datasphere-gitops repository in the user's repo list]
+
+TIP: You can also go directly to your repository:
+link:{gitea_url}/{user}/datasphere-gitops[{gitea_url}/{user}/datasphere-gitops, window=_blank]
+
 // SCREENSHOT NEEDED: Gitea repository view for {user}/datasphere-gitops showing the file list (values.yaml visible)
 image::lab-03-gitea-repo.png[Gitea datasphere-gitops repository showing values.yaml in the file list]
 
-You'll see the `datasphere-gitops` repository: the Helm chart that ArgoCD used to
-deploy DataSphere. This is the same chart source you used in Module 1 -- but with one
-important difference. In Module 1, `helm install` pulled a packaged snapshot from the
-Gitea package registry: a frozen `.tgz` file. That release is still running in
-`{user}-lab`, unchanged. ArgoCD, by contrast, watches this Git repository directly.
-Edits you make here are picked up on the next sync and applied to `{user}-gitops` --
-the Module 1 deployment is unaffected unless you repackage and republish the chart.
+This is the Helm chart that ArgoCD used to deploy DataSphere. ArgoCD watches
+this repository directly -- any edits you commit here are picked up on the next
+sync and applied to `{user}-gitops` automatically.
 
 === Step 3.2: Edit values.yaml
 
@@ -367,7 +362,10 @@ Click the *pencil icon* (Edit this file) in the top-right corner of the file vie
 Find the `extraDatacenters: []` line in the `api:` section.
 
 Replace `extraDatacenters: []` with the following block.
-Keep the indentation exactly as shown -- YAML is whitespace-sensitive:
+
+IMPORTANT: Use *2 spaces* per indent level -- not tabs. The Gitea editor may default to
+4-space tabs, so type the spaces manually or adjust the editor settings. YAML will break
+if the indentation is wrong.
 
 [source,yaml,role="copypaste"]
 ----
@@ -383,8 +381,8 @@ Keep the indentation exactly as shown -- YAML is whitespace-sensitive:
       base_workload_count: 892
 ----
 
-NOTE: The `extraDatacenters` key is indented under `api:`. Make sure your block
-matches that indent level, or the Helm chart will fail to render.
+The `extraDatacenters` key must be indented 2 spaces under `api:` to match the
+rest of the file.
 
 === Step 3.3: Commit the change
 
@@ -473,12 +471,8 @@ Let's see it.
 
 === Step 4.1: Make a direct change to the cluster
 
-Scale the API deployment down to 0 replicas directly, bypassing Git.
-Use either the CLI or the web console:
+Scale the API deployment down to 0 replicas directly, bypassing Git:
 
-[%collapsible]
-.Using the Terminal (CLI)
-====
 [source,role="execute",subs="attributes+"]
 ----
 oc scale deployment datasphere-api --replicas=0 -n {user}-gitops
@@ -486,24 +480,10 @@ oc scale deployment datasphere-api --replicas=0 -n {user}-gitops
 
 [%collapsible]
 .Expected output
-=====
+====
 ----
 deployment.apps/datasphere-api scaled
 ----
-=====
-====
-
-[%collapsible]
-.Using the Web Console
-====
-. In the console, switch to the *{user}-gitops* project.
-. Click *Workloads* → *Deployments*.
-. Click *datasphere-api*.
-. Click *Actions* → *Edit Pod count*, set the count to *0*, and click *Save*.
-+
-NOTE: If the console shows "Autoscaled to 1 Pod" instead of up/down arrows, the
-HPA is managing the replica count. Use *Actions* → *Edit Pod count* or run the CLI
-command instead: `oc scale deployment datasphere-api --replicas=0 -n {user}-gitops`
 ====
 
 === Step 4.2: Watch ArgoCD respond
