@@ -28,6 +28,68 @@ By the end of this lab, you'll be able to:
 * Make a configuration change through Git and watch ArgoCD apply it automatically
 * Explain what drift detection is and why it matters
 
+== Get connected
+
+Each step in this lab includes both a *Terminal (CLI)* and a *Web Console* option.
+Use whichever you prefer -- both achieve the same result.
+
+=== OpenShift web console
+
+Click the *Console* tab on the right side of this lab interface.
+
+Log in with these credentials:
+
+* *Username*: `{user}`
+* *Password*: `{password}`
+* *Console URL*: {openshift_console_url}
+
+TIP: If the left navigation panel is not visible after logging in, click the *≡*
+icon in the top-left corner to expand it.
+
+TIP: If a *guided tour* dialog appears, click *Skip tour* to dismiss it.
+
+After logging in, click the perspective switcher in the top-left corner of the navigation
+panel -- it may default to *Developer*. Select *Core platform*.
+
+=== Terminal (CLI)
+
+Click the *Terminal* tab on the right side of this lab interface.
+
+Log in to the cluster:
+
+[source,role="execute",subs="attributes+"]
+----
+oc login {openshift_api_url} --username {user} --password {password}
+----
+
+[%collapsible]
+.Expected output
+====
+[subs="attributes+"]
+----
+Login successful.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+  * {user}-datasphere
+    {user}-gitops
+
+Using project "{user}-datasphere".
+----
+====
+
+=== Your lab projects
+
+Two projects are relevant to this lab:
+
+* `{user}-datasphere`: the pre-deployed DataSphere reference instance -- you'll open it
+  in Step 0.1 to see the app you'll be deploying under GitOps management
+* `{user}-gitops`: your personal ArgoCD instance runs here -- and where you'll deploy
+  a second DataSphere instance under GitOps management
+
+Both deployments run in parallel, which makes it easy to compare the GitOps-managed
+instance against the pre-deployed one as you work through the lab.
+
 == The application: DataSphere
 
 DataSphere is a datacenter status dashboard that simulates a global network of compute sites.
@@ -69,8 +131,6 @@ In this lab you won't run `oc` commands or `helm install` to deploy DataSphere.
 Instead, you'll tell ArgoCD where your Helm chart lives in Gitea -- and ArgoCD
 handles deployment, updates, and drift correction automatically from that point on.
 
-== Get connected
-
 === Step 0.2: Log in to ArgoCD
 
 Click the *ArgoCD* tab on the right side of this lab interface.
@@ -90,58 +150,6 @@ image::lab-03-00-argocd-login.png[ArgoCD login page showing the Log in via OpenS
 
 TIP: To open ArgoCD in a separate browser window instead, use this URL from
 your connection details: `{argocd_url}`
-
-=== OpenShift web console
-
-Click the *Console* tab on the right side of this lab interface.
-
-Log in with these credentials:
-
-* *Username*: `{user}`
-* *Password*: `{password}`
-* *Console URL*: {openshift_console_url}
-
-TIP: If the left navigation panel is not visible after logging in, click the *≡*
-icon in the top-left corner to expand it.
-
-=== Terminal (CLI)
-
-Click the *Terminal* tab on the right side of this lab interface.
-
-Log in to the cluster:
-
-[source,role="execute",subs="attributes+"]
-----
-oc login {openshift_api_url} --username {user} --password {password}
-----
-
-[%collapsible]
-.Expected output
-====
-[subs="attributes+"]
-----
-Login successful.
-
-You have access to the following projects and can switch between them with 'oc project <projectname>':
-
-  * {user}-datasphere
-    {user}-gitops
-
-Using project "{user}-datasphere".
-----
-====
-
-=== Your lab projects
-
-Two projects are relevant to this lab:
-
-* `{user}-datasphere`: the pre-deployed DataSphere reference instance -- the same app
-  you explored at the start of this lab
-* `{user}-gitops`: your personal ArgoCD instance runs here -- and where you'll deploy
-  a second DataSphere instance under GitOps management
-
-Both deployments run in parallel, which makes it easy to compare the GitOps-managed
-instance against the pre-deployed one as you work through the lab.
 
 == Section 1: Your ArgoCD instance (3 minutes)
 
