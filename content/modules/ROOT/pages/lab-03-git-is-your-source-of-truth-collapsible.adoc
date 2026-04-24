@@ -148,8 +148,8 @@ The same credentials that work in the OpenShift console work here.
 // SCREENSHOT NEEDED: ArgoCD login page showing the "Log in via OpenShift" button
 image::lab-03-00-argocd-login.png[ArgoCD login page showing the Log in via OpenShift button]
 
-TIP: To open ArgoCD in a separate browser window instead, use this URL from
-your connection details: `{argocd_url}`
+TIP: To open ArgoCD in a separate browser window instead, use this URL:
+`https://argocd-server-{user}-gitops.{openshift_cluster_ingress_domain}`
 
 == Section 1: Your ArgoCD instance (3 minutes)
 
