@@ -80,6 +80,8 @@ Click *Log in via OpenShift* and use your existing lab credentials:
 * *Username*: `{user}`
 * *Password*: `{password}`
 
+If an *Authorize Access* page appears, click *Allow selected permissions* to continue.
+
 NOTE: ArgoCD uses your OpenShift login -- no separate account needed.
 The same credentials that work in the OpenShift console work here.
 
@@ -180,11 +182,12 @@ A form panel opens on the right. Fill it in as follows:
 | Field | Value
 | *Application Name* | `datasphere`
 | *Project Name* | `lab`
-| *Sync Policy* | Click *Enable Auto-Sync*
+| *Sync Policy* | Change the dropdown from *Manual* to *Automatic*
 |===
 
-After enabling auto-sync, 2 checkboxes appear. Check *Self Heal*:
+After selecting Automatic, 3 checkboxes appear. Check *Self Heal*:
 
+* *Enable Auto-Sync*: already checked
 * *Prune Resources*: leave unchecked (ArgoCD won't delete resources that are removed from Git)
 * *Self Heal*: check this (if someone changes the cluster directly, ArgoCD corrects it)
 
@@ -305,8 +308,10 @@ and click it.
 
 image::lab-03-08-argocd-route-resource.png[ArgoCD resource tree with the datasphere-ui Route selected and the external link icon visible in the detail panel]
 
-A detail panel opens on the right. Click the *external link* icon next to the hostname
-to open DataSphere in a new browser tab.
+A detail panel opens on the right. Click the hostname link to open DataSphere in
+a new browser tab. If no link appears in the detail panel, open the app directly:
+
+link:https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/[https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/, window=_blank]
 
 You'll see the DataSphere demo app running in `{user}-gitops` -- the same app,
 a second independent deployment, this time managed entirely by ArgoCD.
@@ -490,10 +495,11 @@ deployment.apps/datasphere-api scaled
 . In the console, switch to the *{user}-gitops* project.
 . Click *Workloads* → *Deployments*.
 . Click *datasphere-api*.
+. Click *Actions* → *Edit Pod count*, set the count to *0*, and click *Save*.
 +
-image::lab-03-11-console-scale-api-to-zero.png[Deployment detail page for datasphere-api showing the pod count with the down arrow to scale to 0]
-+
-. Click the *down arrow* next to the pod count to scale it to 0.
+NOTE: If the console shows "Autoscaled to 1 Pod" instead of up/down arrows, the
+HPA is managing the replica count. Use *Actions* → *Edit Pod count* or run the CLI
+command instead: `oc scale deployment datasphere-api --replicas=0 -n {user}-gitops`
 ====
 
 === Step 4.2: Watch ArgoCD respond

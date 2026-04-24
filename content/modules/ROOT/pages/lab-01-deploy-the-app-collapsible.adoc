@@ -42,6 +42,8 @@ Log in with these credentials:
 TIP: If the left navigation panel is not visible after logging in, click the *≡* icon in
 the top-left corner to expand it. You only need to do this once.
 
+TIP: If a *guided tour* dialog appears, click *Skip tour* to dismiss it.
+
 After logging in, click the perspective switcher in the top-left corner of the navigation
 panel -- it may default to *Developer*. Select *Core platform*.
 
@@ -516,7 +518,8 @@ Fill in the form:
 
 . In the *Image name from external registry* field, enter: `{datasphere_ui_image}`
 . Set *Name* to `datasphere-ui`.
-. In the *Application Name* field, change the value to `datasphere-ui`.
+. In the *Application Name* field, change the value to `datasphere-ui` (the form
+  may auto-fill this as `datasphere-ui-app` -- remove the `-app` suffix).
   This groups components together in the Topology view -- naming it clearly
   will matter when you add the API in the next step.
 
@@ -703,8 +706,8 @@ In the left navigation, click *+Add*, then click *Import from Git*.
 . Set *Application* to *No Application Group* -- the API should be separate from the
   `datasphere-ui` group you created in Step 2.2.
 . Set *Name* to `datasphere-api`.
-. Scroll down to *Advanced options*. Under *Show advanced Routing options*, *uncheck*
-  *Create a Route* -- the API should not be publicly accessible.
+. Scroll down to *Advanced options* and *uncheck* *Create a Route* -- the API should
+  not be publicly accessible.
 . Click *Create*.
 
 // SCREENSHOT NEEDED: Import from Git form showing Gitea URL pasted, Builder Image selected (Python), Application=No Application Group, Name=datasphere-api, Create Route unchecked
