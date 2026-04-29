@@ -208,6 +208,12 @@ You'll see 3 pods: `datasphere-api`, `datasphere-redis`, and `datasphere-ui` -- 
 with *1/1* Ready.
 ====
 
+****
+*What about Redis?* Redis is an in-memory data store. The API uses it to keep datacenter
+state consistent across pod restarts and across multiple API replicas. You won't interact
+with Redis directly in this lab -- it runs in the background as a supporting service.
+****
+
 === Step 1.3: Explore the Pod
 
 A *Pod* is the smallest deployable unit in OpenShift. It wraps one or more containers and gives
@@ -241,6 +247,9 @@ Containers:
     State:    Running
     Ready:    True
 ----
+
+NOTE: The actual output is longer -- it includes fields like Annotations, IP, Node,
+and QoS Class. The output above highlights only the fields relevant to this step.
 =====
 
 Notice the *Labels*: `app=datasphere` and `component=ui`. These are how OpenShift connects
@@ -252,6 +261,10 @@ Check the application logs:
 ----
 oc logs -l component=ui
 ----
+
+These are the nginx access logs for the UI container. Each line records an HTTP request --
+the URL, status code, and response size. If you opened the app in your browser, you'll
+see `GET` requests for the page and its assets.
 
 NOTE: If you see no output, open the application URL in your browser first, then run the command again.
 ====
@@ -266,7 +279,9 @@ image::console-guide/lab-01-deploy-the-app/03-ui-pod-details.png[Pod detail page
 Notice the *Labels* section: `app=datasphere` and `component=ui`. These labels are how the
 Service finds this pod.
 
-Click the *Logs* tab to see the live application logs.
+Click the *Logs* tab to see the live application logs. These are the nginx access logs for
+the UI container -- each line records an HTTP request with the URL, status code, and
+response size.
 ====
 
 === Step 1.4: Explore the Service
@@ -292,6 +307,9 @@ Type:              ClusterIP
 Port:              8080/TCP
 Endpoints:         10.x.x.x:8080
 ----
+
+NOTE: The actual output includes additional fields like Namespace, Labels, IP Family Policy,
+and Session Affinity. The output above highlights only the fields relevant to this step.
 =====
 
 Notice the *Selector* field: `app=datasphere,component=ui`. This label-based selection is how
@@ -339,6 +357,9 @@ Insecure Policy: Redirect
 Service:         datasphere-ui
 Port:            8080
 ----
+
+NOTE: As before, the actual output includes additional fields. This view highlights the
+key fields: the public hostname, TLS termination type, and which Service the Route targets.
 =====
 ====
 
@@ -366,19 +387,20 @@ To see this, compare the Services list to the Routes list.
 [%collapsible]
 .Using the Terminal (CLI)
 ====
+Compare the Services to the Routes:
+
 [source,role="execute"]
 ----
-oc get service datasphere-api
+oc get services
 ----
 
-[%collapsible]
-.Expected output
-=====
+[source,role="execute"]
 ----
-NAME             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-datasphere-api   ClusterIP   172.30.14.22   <none>        8080/TCP   5m
+oc get routes
 ----
-=====
+
+Three Services, but only one Route. The API and Redis are reachable inside the cluster
+by Service name, but only `datasphere-ui` has a Route for external access.
 ====
 
 [%collapsible]
@@ -391,7 +413,8 @@ exists: `datasphere-ui`.
 // SCREENSHOT NEEDED: Routes page in {user}-datasphere showing only datasphere-ui — no route for datasphere-api or redis
 image::console-guide/lab-01-deploy-the-app/08-routes-one-only.png[Routes list showing only the datasphere-ui route — no route for datasphere-api or redis]
 
-`datasphere-api` is reachable inside the cluster by name -- no Route needed.
+Three Services, but only one Route. The API and Redis are reachable inside the cluster
+by Service name, but only `datasphere-ui` has a Route for external access.
 ====
 
 The UI talks to the API by Service name -- `datasphere-api` -- and OpenShift's internal DNS
@@ -493,6 +516,11 @@ oc new-app {datasphere_ui_image} --name=datasphere-ui
 `oc new-app` created three resources: an ImageStream, a Deployment, and a Service.
 The output tells you the app isn't externally accessible yet -- you'll fix that next.
 
+TIP: If you see `imagestreams.image.openshift.io "datasphere-ui" already exists`, the
+ImageStream was already created from a previous attempt. Run
+`oc delete all --selector app=datasphere-ui -n {user}-lab` to clean up, then re-run the
+`oc new-app` command above.
+
 Wait for the pod to come up:
 
 [source,role="execute"]
@@ -536,6 +564,10 @@ image::console-guide/lab-01-deploy-the-app/11-deploy-image-create-route-checked.
 
 OpenShift creates a Deployment, a Service, and an edge-terminated Route in one step.
 Wait for the pod ring in *Topology* to turn solid blue before continuing.
+
+TIP: If you see an error that a resource already exists, a previous attempt left
+resources behind. Switch to the *Terminal* tab and run
+`oc delete all --selector app=datasphere-ui -n {user}-lab` to clean up, then try again.
 ====
 
 NOTE: This same rollout process happens every time you deploy a new version. OpenShift creates
@@ -613,9 +645,11 @@ This is *Source-to-Image* (S2I).
 === Step 2.5: (Optional) Browse the source code in Gitea
 
 Your lab environment includes a personal Gitea instance with the DataSphere API source code
-already loaded. Click the *Gitea* tab in the Showroom sidebar. Once Gitea opens, navigate to
-your `datasphere-api` repository by clicking your username in the top-right corner and selecting
-*Your repositories*, then clicking *datasphere-api*.
+already loaded. Click the *Gitea* tab in the Showroom sidebar.
+
+If you see *Sign In* and *Register* buttons, you are not logged in yet. Click *Sign In* and
+use your lab credentials (`{user}` / `{password}`). After logging in, your repositories are
+listed on the dashboard -- click *datasphere-api*.
 
 You can also open the repository directly in a new tab:
 link:{gitea_url}/{user}/datasphere-api[{gitea_url}/{user}/datasphere-api, window=_blank]
@@ -703,9 +737,11 @@ In the left navigation, click *+Add*, then click *Import from Git*.
 . OpenShift detects the repository and selects a build strategy. If it shows *Dockerfile*
   instead of *Builder Image*, click *Edit Import Strategy* and select *Builder Image*,
   then choose the *Python* builder.
-. Set *Application* to *No Application Group* -- the API should be separate from the
+. Open the *Application* dropdown (not the *Application Name* text field below it)
+  and select *No Application Group* -- the API should be separate from the
   `datasphere-ui` group you created in Step 2.2.
-. Set *Name* to `datasphere-api`.
+. Set *Name* to `datasphere-api`. The *Application Name* field should clear itself
+  when you select *No Application Group*; if it doesn't, leave it blank.
 . Scroll down to *Advanced options* and *uncheck* *Create a Route* -- the API should
   not be publicly accessible.
 . Click *Create*.
@@ -745,10 +781,12 @@ Copy the URL from the `HOST/PORT` column and open it in your browser.
 .Using the Web Console
 ====
 In *Topology*, both `datasphere-ui` and `datasphere-api` now appear with solid blue rings.
+Notice that `datasphere-api` shows a *Python logo* -- the console detected the Python
+builder used in Step 2.6 and set the icon automatically.
+
 Click the *open URL* icon (the arrow-in-box in the top-right corner) on the `datasphere-ui`
 node to open the application.
 
-// SCREENSHOT NEEDED: Topology view showing ONLY datasphere-ui and datasphere-api nodes (no redis), both with solid blue rings, with arrow pointing to the open URL icon on datasphere-ui
 image::console-guide/lab-01-deploy-the-app/12-topology-s2i-api-deployed.png[Topology view showing datasphere-ui and datasphere-api both deployed with the open URL icon on datasphere-ui]
 ====
 

@@ -317,8 +317,11 @@ Open the DataSphere app that ArgoCD just deployed:
 
 link:https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/[https://datasphere-ui-{user}-gitops.{openshift_cluster_ingress_domain}/, window=_blank]
 
-You'll see the DataSphere demo app running in `{user}-gitops` -- the same app,
-a second independent deployment, this time managed entirely by ArgoCD.
+This looks identical to the DataSphere you opened in Step 0.1 -- and that's the point.
+It's the same application, but this is a *separate, independent deployment* in `{user}-gitops`,
+managed entirely by ArgoCD. The pre-deployed instance in `{user}-datasphere` was installed
+by automation; this one was deployed from your Git repository. From here on, every change
+to this deployment goes through Git -- no `oc` commands, no Helm CLI.
 
 == Section 3: Change Git, change the cluster (7 minutes)
 

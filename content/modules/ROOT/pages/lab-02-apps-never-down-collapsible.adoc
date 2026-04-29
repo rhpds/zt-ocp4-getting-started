@@ -121,6 +121,10 @@ Copy the URL from the `HOST/PORT` column and open it in a new browser tab.
 [%collapsible]
 .Using the Web Console
 ====
+Make sure you are in the *`{user}-datasphere`* project. If you followed the *Get connected*
+steps above, you should already be there. If not, click the project name at the top of the
+page and select *`{user}-datasphere`*.
+
 In the left navigation, expand *Networking* and click *Routes*.
 
 // SCREENSHOT NEEDED: Networking → Routes in {user}-datasphere, showing datasphere-ui route with URL in Location column
